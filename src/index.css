@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #FFFFFF;
+    color: #09090B;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3, .font-editorial {
+    font-family: var(--font-sans);
+    letter-spacing: -0.025em;
+  }
+
+  .font-mono-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* UI Font Scale Settings */
+  html[data-ui-scale="sm"] {
+    font-size: 14.8px;
+  }
+  html[data-ui-scale="md"] {
+    font-size: 16px;
+  }
+  html[data-ui-scale="lg"] {
+    font-size: 17.2px;
+  }
+
+  /* Theme: Giấy Dó Cổ Phong (Warm Heritage Paper) */
+  html[data-ui-theme="warm"] body,
+  html[data-ui-theme="warm"] .bg-white {
+    background-color: #FAF7F0 !important;
+    color: #1C1917;
+  }
+  html[data-ui-theme="warm"] .bg-zinc-50,
+  html[data-ui-theme="warm"] .bg-zinc-50\/40,
+  html[data-ui-theme="warm"] .bg-zinc-50\/50 {
+    background-color: #F3EFE4 !important;
+  }
+  html[data-ui-theme="warm"] .border-zinc-200,
+  html[data-ui-theme="warm"] .border-zinc-100 {
+    border-color: #E5DEC9 !important;
+  }
+
+  /* Theme: Tối Studio (Dark Mode) */
+  html[data-ui-theme="dark"] {
+    filter: invert(1) hue-rotate(180deg);
+    background-color: #09090B;
+  }
+  html[data-ui-theme="dark"] img,
+  html[data-ui-theme="dark"] video,
+  html[data-ui-theme="dark"] canvas,
+  html[data-ui-theme="dark"] iframe {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  /* Compact UI Density */
+  html[data-ui-density="compact"] section {
+    padding-top: 1.5rem !important;
+    padding-bottom: 1.5rem !important;
+  }
+}
+
+/* Minimalist thin scrollbars for floating 3D HUD panels */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(161, 161, 170, 0.45);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(113, 113, 122, 0.7);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

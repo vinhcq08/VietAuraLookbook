@@ -1,0 +1,6 @@
+{
+  "name": "Việt Phục Lookbook — Cố Vấn Văn Hóa & Phối Đồ Cổ Phục",
+  "description": "Nền tảng khám phá di sản trang phục truyền thống Việt Nam, xưởng phối đồ Mix & Match kiểm duyệt quy chuẩn văn hóa (Culture Guard) và Cố vấn Văn hóa AI dành cho giới trẻ.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
