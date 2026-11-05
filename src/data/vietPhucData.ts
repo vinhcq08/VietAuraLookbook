@@ -176,6 +176,14 @@ export const HERITAGE_IMAGES = {
   festivalDenHung: '/src/assets/images/le_hoi_den_hung_1791562591526.jpg',
   festivalCungDinhHue: '/src/assets/images/le_hoi_cung_dinh_hue_1791562603825.jpg',
   vanMieu360Panorama: '/src/assets/images/van_mieu_360_panorama_1791644768154.jpg',
+  hoangThanh360Panorama: '/src/assets/images/hoang_thanh_360_panorama_1792421908645.jpg',
+  daiNoiHue360Panorama: '/src/assets/images/dai_noi_hue_360_panorama_1792421924230.jpg',
+  hoiAn360Panorama: '/src/assets/images/hoi_an_360_panorama_1792421940744.jpg',
+  duongLam360Panorama: '/src/assets/images/duong_lam_360_panorama_1792421956838.jpg',
+  chuaThay360Panorama: '/src/assets/images/chua_thay_360_panorama_1792421970899.jpg',
+  langTuDuc360Panorama: '/src/assets/images/lang_tu_duc_360_panorama_1792421998583.jpg',
+  binhThuy360Panorama: '/src/assets/images/binh_thuy_360_panorama_1792422014067.jpg',
+  dinhDocLap360Panorama: '/src/assets/images/dinh_doc_lap_360_panorama_1792422027925.jpg',
 };
 
 export interface Model2DPhotoVariant {
@@ -1459,6 +1467,20 @@ export interface SocialPostItem extends SocialPostSchema {
     heritageStatus: string;
     highlights: string[];
   };
+  // Optional English localization fields
+  title_en?: string;
+  caption_en?: string;
+  contentCategory_en?: string;
+  metricsLabel_en?: string;
+  publishedAt_en?: string;
+  tags_en?: string[];
+  festivalDetails_en?: {
+    lunarDate?: string;
+    location?: string;
+    mainRituals?: string;
+    heritageStatus?: string;
+    highlights?: string[];
+  };
 }
 
 export interface AIScannedPostMetadata {
@@ -1817,20 +1839,28 @@ export interface VerifiedPartnerVendorItem {
   vendor_id: string;
   post_id: string;
   vendor_name: string;
+  vendor_name_en?: string;
   shop_type: 'VERIFIED_RENTAL_SHOP' | 'VERIFIED_TAILOR';
   shop_type_label: string;
+  shop_type_label_en?: string;
   region: 'MIEN_BAC' | 'MIEN_TRUNG' | 'MIEN_NAM';
   region_label: string;
+  region_label_en?: string;
   specialty_title: string;
+  specialty_title_en?: string;
   description: string;
+  description_en?: string;
   google_maps_address: string;
   rental_price_per_day: string;
+  rental_price_per_day_en?: string;
   tailoring_price_from: string;
+  tailoring_price_from_en?: string;
   tailoring_available: boolean;
   rating: number;
   reviews_count: number;
   image_url: string;
   smart_tags: string[];
+  smart_tags_en?: string[];
   outfit_config_id: string;
   outfitConfig: OutfitConfigCode;
 }
@@ -1840,21 +1870,30 @@ export const VERIFIED_PARTNER_VENDORS: VerifiedPartnerVendorItem[] = [
     vendor_id: 'VENDOR_Y_VAN_HIEN_HN',
     post_id: 'MP_PARTNER_2026_001',
     vendor_name: 'Ỷ Vân Hiên — Cổ Phục Kinh Kỳ',
+    vendor_name_en: 'Y Van Hien — Imperial Attire Atelier',
     shop_type: 'VERIFIED_TAILOR',
     shop_type_label: 'Nhà may đo & Cho thuê chuẩn điển chế',
+    shop_type_label_en: 'Verified Bespoke Tailoring & Rental Atelier',
     region: 'MIEN_BAC',
     region_label: 'Hà Nội · Miền Bắc',
+    region_label_en: 'Hanoi · Northern Vietnam',
     specialty_title: 'Áo Ngũ Thân Lập Lĩnh Tay Chẽn & Lễ Phục Tốt Nghiệp',
+    specialty_title_en: 'Standing-Collar Fitted Áo Ngũ Thân & Academic Regalia',
     description:
       'Chuyên phục dựng, may đo theo số đo nhân trắc học và cho thuê Áo Ngũ Thân tay chẽn, Áo Tấc lụa tơ đũi Nha Xá chuẩn cổ lệ năm 1744.',
+    description_en:
+      'Specializes in historical restoration, anthropometric bespoke tailoring, and rental of fitted-sleeve Áo Ngũ Thân and Nha Xá raw silk Áo Tấc adhering to the 1744 imperial protocol.',
     google_maps_address: 'Văn Miếu - Quốc Tử Giám, Đống Đa, Hà Nội',
     rental_price_per_day: '280.000đ/ngày',
+    rental_price_per_day_en: '280,000 VND/day',
     tailoring_price_from: '2.400.000đ/bộ',
+    tailoring_price_from_en: 'From 2,400,000 VND/set',
     tailoring_available: true,
     rating: 4.9,
     reviews_count: 328,
     image_url: HERITAGE_IMAGES.aoNguThan,
     smart_tags: ['#VietPhucReal', '#VietPhuc3D', '#AoNguThan', '#DoDiTotNghiep'],
+    smart_tags_en: ['#VietPhucReal', '#VietPhuc3D', '#AoNguThan', '#GraduationAttire'],
     outfit_config_id: 'CFG_PARTNER_YVANHIEN_01',
     outfitConfig: {
       config_id: 'CFG_PARTNER_YVANHIEN_01',
@@ -1876,21 +1915,30 @@ export const VERIFIED_PARTNER_VENDORS: VerifiedPartnerVendorItem[] = [
     vendor_id: 'VENDOR_HOA_NIEN_HUE',
     post_id: 'MP_PARTNER_2026_002',
     vendor_name: 'Hoa Niên — Cổ Phục Cung Đình Huế',
+    vendor_name_en: 'Hoa Nien — Hue Imperial Court Attire',
     shop_type: 'VERIFIED_RENTAL_SHOP',
     shop_type_label: 'Tiệm cho thuê & Chế tác cung đình',
+    shop_type_label_en: 'Imperial Craft & Rental Atelier',
     region: 'MIEN_TRUNG',
     region_label: 'Cố đô Huế · Miền Trung',
+    region_label_en: 'Hue Ancient Capital · Central Vietnam',
     specialty_title: 'Áo Nhật Bình Gấm Đỏ Chu Sa & Cổ Phục Hoàng Cung',
+    specialty_title_en: 'Vermilion Silk Áo Nhật Bình & Royal Heritage Costumes',
     description:
       'Tiệm cổ phục ngay sát Đại Nội Huế chuyên cho thuê chụp ảnh di tích, lễ cưới truyền thống và nhận đặt thêu tay dải ngũ sắc Áo Nhật Bình.',
+    description_en:
+      'Located right by the Hue Imperial Citadel, specializing in heritage photo rentals, traditional weddings, and hand-embroidered five-color bands for Áo Nhật Bình.',
     google_maps_address: 'Đại Nội Huế, TP. Huế, Thừa Thiên Huế',
     rental_price_per_day: '380.000đ/ngày',
+    rental_price_per_day_en: '380,000 VND/day',
     tailoring_price_from: '3.800.000đ/bộ',
+    tailoring_price_from_en: 'From 3,800,000 VND/set',
     tailoring_available: true,
     rating: 4.9,
     reviews_count: 412,
     image_url: HERITAGE_IMAGES.aoNhatBinh,
     smart_tags: ['#VietPhucReal', '#VietPhuc3D', '#AoNhatBinh', '#DoDiCuoi'],
+    smart_tags_en: ['#VietPhucReal', '#VietPhuc3D', '#AoNhatBinh', '#BridalAttire'],
     outfit_config_id: 'CFG_PARTNER_HOANIEN_02',
     outfitConfig: {
       config_id: 'CFG_PARTNER_HOANIEN_02',
@@ -1912,21 +1960,30 @@ export const VERIFIED_PARTNER_VENDORS: VerifiedPartnerVendorItem[] = [
     vendor_id: 'VENDOR_DONG_PHONG_BN',
     post_id: 'MP_PARTNER_2026_003',
     vendor_name: 'Đông Phong Atelier — Y Phục Kinh Bắc',
+    vendor_name_en: 'Dong Phong Atelier — Kinh Bac Traditional Garments',
     shop_type: 'VERIFIED_RENTAL_SHOP',
     shop_type_label: 'Tiệm cho thuê & Phục dựng dân gian',
+    shop_type_label_en: 'Folk Heritage Restoration & Rental',
     region: 'MIEN_BAC',
     region_label: 'Hà Nội & Bắc Ninh · Miền Bắc',
+    region_label_en: 'Hanoi & Bac Ninh · Northern Vietnam',
     specialty_title: 'Áo Tứ Thân Mớ Ba Mớ Bảy, Yếm Đào & Nón Ba Tầm',
+    specialty_title_en: 'Multi-Layered Áo Tứ Thân, Crimson Yếm & Nón Ba Tầm',
     description:
       'Không gian cho thuê trọn bộ Áo Tứ Thân đũi tơ tằm, váy đụp lụa đen và Nón quai thao thủ công phục vụ trảy hội mùa xuân, chụp ảnh đình chùa.',
+    description_en:
+      'Rental atelier offering complete sets of raw mulberry silk Áo Tứ Thân, black silk wrap skirts, and handcrafted Nón Quai Thao for spring festivals and pagoda visits.',
     google_maps_address: 'Làng cổ Đường Lâm, Sơn Tây, Hà Nội',
     rental_price_per_day: '220.000đ/ngày',
+    rental_price_per_day_en: '220,000 VND/day',
     tailoring_price_from: '1.850.000đ/bộ',
+    tailoring_price_from_en: 'From 1,850,000 VND/set',
     tailoring_available: true,
     rating: 4.8,
     reviews_count: 215,
     image_url: HERITAGE_IMAGES.aoTuThan,
     smart_tags: ['#VietPhucReal', '#VietPhuc3D', '#AoTuThan', '#DoDiChua'],
+    smart_tags_en: ['#VietPhucReal', '#VietPhuc3D', '#AoTuThan', '#TemplePilgrimage'],
     outfit_config_id: 'CFG_PARTNER_DONGPHONG_03',
     outfitConfig: {
       config_id: 'CFG_PARTNER_DONGPHONG_03',
@@ -1948,21 +2005,30 @@ export const VERIFIED_PARTNER_VENDORS: VerifiedPartnerVendorItem[] = [
     vendor_id: 'VENDOR_VAN_THIEN_Y_HN',
     post_id: 'MP_PARTNER_2026_004',
     vendor_name: 'Vạn Thiên Y — Xưởng May Cổ Phục Nam & Kỷ Yếu',
+    vendor_name_en: 'Van Thien Y — Men’s Heritage Tailoring & Regalia',
     shop_type: 'VERIFIED_TAILOR',
     shop_type_label: 'Nhà may đo cá nhân hóa theo dáng 3D',
+    shop_type_label_en: 'Personalized 3D Measurement Tailoring Atelier',
     region: 'MIEN_BAC',
     region_label: 'Hà Nội · Miền Bắc',
+    region_label_en: 'Hanoi · Northern Vietnam',
     specialty_title: 'Áo Ngũ Thân Nam Lập Lĩnh Lam Cổ Điển & Khăn Xếp',
+    specialty_title_en: 'Classic Indigo Men’s Áo Ngũ Thân & Khăn Xếp',
     description:
       'Chuyên nhận số đo 3D trực tuyến từ ứng dụng để cắt rập Áo Ngũ Thân nam/nữ chuẩn tỷ lệ vai - ngực - eo (148–188cm), ưu đãi riêng cho sinh viên.',
+    description_en:
+      'Accepts direct online 3D measurements from the app to craft bespoke patterns for men and women’s Áo Ngũ Thân with precise shoulder-chest-waist proportions (148–188cm).',
     google_maps_address: 'Hoàng thành Thăng Long, Ba Đình, Hà Nội',
     rental_price_per_day: '260.000đ/ngày',
+    rental_price_per_day_en: '260,000 VND/day',
     tailoring_price_from: '2.250.000đ/bộ',
+    tailoring_price_from_en: 'From 2,250,000 VND/set',
     tailoring_available: true,
     rating: 4.9,
     reviews_count: 194,
     image_url: HERITAGE_IMAGES.realMaleStudio,
     smart_tags: ['#VietPhucReal', '#VietPhuc3D', '#AoNguThan', '#KyYeu'],
+    smart_tags_en: ['#VietPhucReal', '#VietPhuc3D', '#AoNguThan', '#YearbookShoot'],
     outfit_config_id: 'CFG_PARTNER_VANTHIENY_04',
     outfitConfig: {
       config_id: 'CFG_PARTNER_VANTHIENY_04',
@@ -1984,21 +2050,30 @@ export const VERIFIED_PARTNER_VENDORS: VerifiedPartnerVendorItem[] = [
     vendor_id: 'VENDOR_HOI_AN_SILK',
     post_id: 'MP_PARTNER_2026_005',
     vendor_name: 'Cổ Phong Hội An — Tiệm Thuê & May Nhanh 24h',
+    vendor_name_en: 'Co Phong Hoi An — 24h Express Tailor & Rental Atelier',
     shop_type: 'VERIFIED_RENTAL_SHOP',
     shop_type_label: 'Tiệm cho thuê & May lấy nhanh phố cổ',
+    shop_type_label_en: 'Old Town Rental & Express 24h Tailoring',
     region: 'MIEN_TRUNG',
     region_label: 'Hội An · Miền Trung',
+    region_label_en: 'Hoi An · Central Vietnam',
     specialty_title: 'Áo Ngũ Thân Tơ Tằm & Việt Phục Dạo Phố Đèn Lồng',
+    specialty_title_en: 'Mulberry Silk Áo Ngũ Thân & Lantern Promenade Attire',
     description:
       'Cho thuê theo giờ/ngày và nhận may đo nhanh trong 24h tại phố cổ Hội An; chất liệu tơ sống, đũi mát nhẹ phù hợp dạo phố và thả hoa đăng.',
+    description_en:
+      'Hourly and daily rentals plus 24-hour express bespoke tailoring in Hoi An Ancient Town; lightweight raw silk perfect for lantern festivals.',
     google_maps_address: 'Phố cổ Hội An, Quảng Nam',
     rental_price_per_day: '240.000đ/ngày',
+    rental_price_per_day_en: '240,000 VND/day',
     tailoring_price_from: '2.100.000đ/bộ',
+    tailoring_price_from_en: 'From 2,100,000 VND/set',
     tailoring_available: true,
     rating: 4.8,
     reviews_count: 276,
     image_url: HERITAGE_IMAGES.hero,
     smart_tags: ['#VietPhucReal', '#VietPhuc3D', '#AoNguThan', '#DaoPho'],
+    smart_tags_en: ['#VietPhucReal', '#VietPhuc3D', '#AoNguThan', '#OldTownPromenade'],
     outfit_config_id: 'CFG_PARTNER_HOIAN_05',
     outfitConfig: {
       config_id: 'CFG_PARTNER_HOIAN_05',
@@ -2020,21 +2095,30 @@ export const VERIFIED_PARTNER_VENDORS: VerifiedPartnerVendorItem[] = [
     vendor_id: 'VENDOR_LUA_PHUONG_NAM_SG',
     post_id: 'MP_PARTNER_2026_006',
     vendor_name: 'Tiệm Lụa Phương Nam — Sài Gòn',
+    vendor_name_en: 'Phuong Nam Silk Atelier — Saigon',
     shop_type: 'VERIFIED_TAILOR',
     shop_type_label: 'Nhà may đo & Cho thuê Việt phục Nam Bộ',
+    shop_type_label_en: 'Southern Vietnamese Attire Tailor & Rental',
     region: 'MIEN_NAM',
     region_label: 'TP.HCM & Cần Thơ · Miền Nam',
+    region_label_en: 'Ho Chi Minh City & Can Tho · Southern Vietnam',
     specialty_title: 'Áo Bà Ba Tơ Chuối, Lãnh Mỹ A & Áo Dài Tân Thời',
+    specialty_title_en: 'Banana Fiber Áo Bà Ba, Lãnh Mỹ A Silk & Modern Áo Dài',
     description:
       'Chuyên may đo Áo Bà Ba cổ tim/cổ tròn, Áo Dài Lemur/Lê Phổ và cho thuê phụ kiện khăn rằn, nón lá, guốc mộc chụp ảnh tại Dinh Độc Lập, Bình Thủy.',
+    description_en:
+      'Specializes in tailored V-neck and round-collar Áo Bà Ba, Lemur/Lê Phổ Áo Dài, and accessory rentals including Khăn Rằn, Nón Lá, and Guốc Mộc.',
     google_maps_address: 'Dinh Độc Lập, Quận 1, TP.HCM',
     rental_price_per_day: '200.000đ/ngày',
+    rental_price_per_day_en: '200,000 VND/day',
     tailoring_price_from: '1.650.000đ/bộ',
+    tailoring_price_from_en: 'From 1,650,000 VND/set',
     tailoring_available: true,
     rating: 4.9,
     reviews_count: 305,
     image_url: HERITAGE_IMAGES.aoDaiBaBa,
     smart_tags: ['#VietPhucReal', '#VietPhuc3D', '#AoBaBa', '#DaoPho'],
+    smart_tags_en: ['#VietPhucReal', '#VietPhuc3D', '#AoBaBa', '#SaigonStroll'],
     outfit_config_id: 'CFG_PARTNER_PHUONGNAM_06',
     outfitConfig: {
       config_id: 'CFG_PARTNER_PHUONGNAM_06',
@@ -2147,6 +2231,7 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
     original_url: 'https://www.tiktok.com/@linhchi.cophuc/video/74829103841',
     source_hashtag: '#VietPhucApp',
     tags: ['#TikTok', '#VietPhuc3D', '#AoNguThan', '#DoDiTotNghiep'],
+    tags_en: ['#TikTok', '#VietPhuc3D', '#AoNguThan', '#GraduationAttire'],
     has_re_fit_3d: true,
     is_shoppable: true,
     detected_3d_link: 'https://vietphuc.app/3d/CFG_NGUTHAN_TOTNGHIEP_01',
@@ -2155,13 +2240,19 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
     culture_guard_status: 'Approved',
     is_local_locked: true,
     title: 'Biến hình Áo Ngũ Thân Tay Chẽn nhận bằng tốt nghiệp tại Văn Miếu',
+    title_en: 'Fitted-Sleeve Áo Ngũ Thân graduation transition at Temple of Literature',
     caption:
       'Biến hình từ bản thiết kế 3D ra đời thật tại Văn Miếu - Quốc Tử Giám. Mẫu 3D: https://vietphuc.app/3d/CFG_NGUTHAN_TOTNGHIEP_01 · Link thuê/may: https://vietphuc.app/rent/y-van-hien #VietPhucApp',
+    caption_en:
+      'Transforming from 3D studio design to real-life wear at Temple of Literature. 3D model: https://vietphuc.app/3d/CFG_NGUTHAN_TOTNGHIEP_01 · Atelier rental: https://vietphuc.app/rent/y-van-hien #VietPhucApp',
     contentCategory: 'Video ngắn (9:16) · Biến hình & Vlog di tích',
+    contentCategory_en: 'Short Video (9:16) · Transformation & Heritage Vlog',
     aspectRatio: '9:16',
     imageUrl: HERITAGE_IMAGES.aoNguThan,
     metricsLabel: '142.8K lượt xem trên TikTok',
+    metricsLabel_en: '142.8K views on TikTok',
     publishedAt: '2 giờ trước',
+    publishedAt_en: '2 hours ago',
     location_query: 'Văn Miếu - Quốc Tử Giám, Hà Nội',
     outfitConfig: {
       config_id: 'CFG_NGUTHAN_TOTNGHIEP_01',
@@ -2186,19 +2277,26 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
     original_url: 'https://www.facebook.com/groups/daivietcophong/posts/918273645',
     source_hashtag: '#VietPhucLookbook',
     tags: ['#Facebook', '#VietPhucReal', '#AoNguThan', '#DoDiChua'],
+    tags_en: ['#Facebook', '#VietPhucReal', '#AoNguThan', '#TempleAttire'],
     has_re_fit_3d: false,
     is_shoppable: false,
     outfit_config_id: null,
     culture_guard_status: 'Approved',
     is_local_locked: true,
     title: 'Lễ hội Đền Hùng: Nghi thức rước kiệu Bách Gia Trăm Họ & Tín ngưỡng thờ cúng Hùng Vương',
+    title_en: 'Hung Kings Temple Festival: Hundred Clans Palanquin Procession & Hung Kings Worship Traditions',
     caption:
       'Toàn cảnh đoàn rước kiệu sơn son thếp vàng và nghi thức dâng hương Quốc Tổ Hùng Vương ngày Mùng 10 tháng 3 Âm lịch tại núi Nghĩa Lĩnh, Phú Thọ. Lễ hội quy tụ hàng chục cỗ kiệu Bát Cống truyền thống, cờ hội ngũ sắc cùng trình diễn Hát Xoan cổ tại các đình làng vùng Đất Tổ. #VietPhucLookbook',
+    caption_en:
+      'Grand red-and-gold gilded palanquin procession and national incense-offering ceremony honoring the Hung Kings on the 10th day of the 3rd lunar month at Nghia Linh mountain, Phu Tho. #VietPhucLookbook',
     contentCategory: 'Lễ hội truyền thống · Di sản Văn hóa Phi vật thể UNESCO',
+    contentCategory_en: 'Traditional Festival · UNESCO Intangible Cultural Heritage',
     aspectRatio: '16:9',
     imageUrl: HERITAGE_IMAGES.festivalDenHung,
     metricsLabel: '18.6K lượt chia sẻ trên Facebook',
+    metricsLabel_en: '18.6K shares on Facebook',
     publishedAt: '5 giờ trước',
+    publishedAt_en: '5 hours ago',
     location_query: 'Khu Di tích Đền Hùng, Phú Thọ',
     festivalDetails: {
       lunarDate: 'Mùng 1 – 10 tháng 3 Âm lịch (Chính hội 10/3)',
@@ -2211,6 +2309,17 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
         'Trình diễn Hát Xoan cổ tại miếu Lãi Lèn và đình Hùng Lô kết hợp hội thi gói bánh, giã bánh giầy.',
       ],
     },
+    festivalDetails_en: {
+      lunarDate: '1st – 10th of 3rd Lunar Month (Main Day 10/3)',
+      location: 'Nghia Linh Mountain, Hy Cuong, Viet Tri City, Phu Tho',
+      mainRituals: 'Bat Cong Palanquin Procession, Upper Temple Incense Offering, Bronze Drums & Ancient Xoan Singing',
+      heritageStatus: 'Representative Intangible Cultural Heritage of Humanity (UNESCO 2012)',
+      highlights: [
+        'Red-and-gold gilded Bat Cong palanquin procession from neighboring communes gathered at the foot of Nghia Linh mountain.',
+        'Traditional offerings of square rice cake (Banh Chung) and round rice cake (Banh Giay) symbolizing Heaven and Earth.',
+        'Ancient Xoan singing performances at Lai Len shrine and Hung Lo communal house combined with traditional wrapping contests.',
+      ],
+    },
   },
   {
     post_id: 'SP_INSTA_2026_003',
@@ -2219,6 +2328,7 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
     original_url: 'https://www.instagram.com/p/C8vNhatBinhHue/',
     source_hashtag: '#VietPhucLookbook',
     tags: ['#Instagram', '#VietPhucReal', '#AoNhatBinh', '#DoDiCuoi'],
+    tags_en: ['#Instagram', '#VietPhucReal', '#AoNhatBinh', '#WeddingAttire'],
     has_re_fit_3d: false,
     is_shoppable: true,
     detected_shop_link: 'https://vietphuc.app/rent/hoa-nien-hue',
@@ -2226,13 +2336,19 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
     culture_guard_status: 'Approved',
     is_local_locked: true,
     title: 'Bộ ảnh cổ phong Chu Sa Ngự Uyển & Bảng màu gấm cung đình Huế',
+    title_en: 'Imperial Vermilion Lookbook & Hue Court Brocade Color Palette',
     caption:
       'Lookbook nhiếp ảnh Áo Nhật Bình lễ cưới chụp thực tế tại Đại Nội Huế. Link đặt thuê & may đo lễ phục: https://vietphuc.app/rent/hoa-nien-hue #VietPhucLookbook',
+    caption_en:
+      'Wedding Áo Nhật Bình photoshoot lookbook captured at Hue Imperial Citadel. Rental & bespoke tailoring link: https://vietphuc.app/rent/hoa-nien-hue #VietPhucLookbook',
     contentCategory: 'Bộ ảnh nghệ thuật · Nhiếp ảnh cổ phong',
+    contentCategory_en: 'Fine Art Lookbook · Heritage Photography',
     aspectRatio: '4:5',
     imageUrl: HERITAGE_IMAGES.aoNhatBinh,
     metricsLabel: '29.6K lượt thích trên Instagram',
+    metricsLabel_en: '29.6K likes on Instagram',
     publishedAt: '1 ngày trước',
+    publishedAt_en: '1 day ago',
     location_query: 'Đại Nội Huế, Thừa Thiên Huế',
   },
   {
@@ -2242,19 +2358,26 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
     original_url: 'https://www.tiktok.com/@kinhbac.quanho.heritage/video/74830918273',
     source_hashtag: '#VietPhucLookbook',
     tags: ['#TikTok', '#VietPhucReal', '#AoTuThan', '#DoDiChua'],
+    tags_en: ['#TikTok', '#VietPhucReal', '#AoTuThan', '#FestivalAttire'],
     has_re_fit_3d: false,
     is_shoppable: false,
     outfit_config_id: null,
     culture_guard_status: 'Approved',
     is_local_locked: true,
     title: 'Hội Lim Kinh Bắc: Hát đối đáp Quan họ trên thuyền rồng & phong tục trảy hội mùa xuân',
+    title_en: 'Lim Festival of Kinh Bac: Quan Ho Duets on Dragon Boats & Spring Pilgrimage Customs',
     caption:
       'Khung cảnh liền anh liền chị trong trang phục Áo Tứ Thân mớ ba mớ bảy, nón ba tầm hát đối đáp Quan họ cổ trên thuyền rồng tại hồ nước đình Lim (Tiên Du, Bắc Ninh) ngày 13 tháng Giêng. #VietPhucLookbook',
+    caption_en:
+      'Male and female singers in layered Áo Tứ Thân and Nón Ba Tầm performing classical Quan Ho duets on dragon boats at Lim lake on the 13th day of the 1st lunar month. #VietPhucLookbook',
     contentCategory: 'Lễ hội truyền thống · Văn hóa Quan họ Kinh Bắc',
+    contentCategory_en: 'Traditional Festival · Kinh Bac Quan Ho Culture',
     aspectRatio: '9:16',
     imageUrl: HERITAGE_IMAGES.festivalHoiLim,
     metricsLabel: '96.4K lượt xem trên TikTok',
+    metricsLabel_en: '96.4K views on TikTok',
     publishedAt: '2 ngày trước',
+    publishedAt_en: '2 days ago',
     location_query: 'Đồi Lim, Tiên Du, Bắc Ninh',
     festivalDetails: {
       lunarDate: '12 – 13 tháng Giêng Âm lịch hàng năm',
@@ -2267,6 +2390,17 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
         'Trò chơi dân gian truyền thống mùa xuân: đánh đu đôi, cờ người, vật truyền thống và dệt cửi.',
       ],
     },
+    festivalDetails_en: {
+      lunarDate: '12th – 13th of 1st Lunar Month annually',
+      location: 'Lim Hill & Tieu Tuong River, Tien Du District, Bac Ninh',
+      mainRituals: 'Royal Decree Procession, Singing on Dragon Boats, Betel & Areca Offering, Fairy Swing',
+      heritageStatus: 'Bac Ninh Quan Ho Folk Songs — UNESCO Intangible Cultural Heritage (2009)',
+      highlights: [
+        'Classical Quan Ho call-and-response singing on dragon boats and at singing pavilions around Lim Hill.',
+        'Traditional betel-quid offering ritual cementing bonds between ancestral Quan Ho villages.',
+        'Traditional spring folk games: double swinging, human chess, wrestling, and weaving contests.',
+      ],
+    },
   },
   {
     post_id: 'SP_INSTA_2026_005',
@@ -2275,19 +2409,26 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
     original_url: 'https://www.instagram.com/p/C8vDemHoangCungHue/',
     source_hashtag: '#VietPhucApp',
     tags: ['#Instagram', '#VietPhucReal', '#AoNhatBinh', '#DoDiChua'],
+    tags_en: ['#Instagram', '#VietPhucReal', '#AoNhatBinh', '#CourtAttire'],
     has_re_fit_3d: false,
     is_shoppable: false,
     outfit_config_id: null,
     culture_guard_status: 'Approved',
     is_local_locked: true,
     title: 'Lễ hội Đêm Hoàng Cung Huế: Nhã nhạc cung đình & ngàn ánh đèn lồng trước Ngọ Môn',
+    title_en: 'Hue Royal Palace Night: Imperial Court Music & Lantern Spectacle before Ngo Mon',
     caption:
       'Tái hiện đêm lễ hội cung đình triều Nguyễn tại Đại Nội Huế với nghi thức Đổi gác, trình diễn Đại nhạc – Tiểu nhạc và vũ khúc Lục Cúng Hoa Đăng dưới ánh sáng của hàng ngàn chiếc đèn lồng lụa. #VietPhucApp',
+    caption_en:
+      'Recreation of Nguyen dynasty royal palace night at Hue Citadel with Changing of Guard ceremony, Court Music, and Luc Cung lantern dance beneath glowing silk lanterns. #VietPhucApp',
     contentCategory: 'Lễ hội truyền thống · Di sản Cung đình Huế',
+    contentCategory_en: 'Traditional Festival · Hue Imperial Court Heritage',
     aspectRatio: '4:5',
     imageUrl: HERITAGE_IMAGES.festivalCungDinhHue,
     metricsLabel: '34.8K lượt thích trên Instagram',
+    metricsLabel_en: '34.8K likes on Instagram',
     publishedAt: '3 ngày trước',
+    publishedAt_en: '3 days ago',
     location_query: 'Đại Nội Huế, Thừa Thiên Huế',
     festivalDetails: {
       lunarDate: 'Kỳ Festival Huế & Các đêm lễ hội Hoàng cung định kỳ',
@@ -2300,6 +2441,17 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
         'Trải nghiệm thưởng trà sen Tịnh Tâm, nghệ thuật Pháp lam và trò chơi Đầu hồ trong Hoàng cung.',
       ],
     },
+    festivalDetails_en: {
+      lunarDate: 'Hue Festival & Periodic Royal Palace Nights',
+      location: 'Ngo Mon Gate – Thai Hoa Palace – The Mieu, Hue Citadel',
+      mainRituals: 'Royal Guard Changing Ceremony, Court Music Performance, Luc Cung Flower Lantern Dance',
+      heritageStatus: 'Hue Royal Court Music (Nha Nhac) — UNESCO Masterpiece of Oral and Intangible Heritage (2003)',
+      highlights: [
+        'Ngo Mon – Thai Hoa Palace axis illuminated by thousands of traditional Hue silk lanterns.',
+        'Performances of Grand and Small Music orchestras with classical court dances.',
+        'Royal lotus tea tasting, Phap Lam enamel art, and Dau Ho pitching games in the Forbidden City.',
+      ],
+    },
   },
   {
     post_id: 'SP_FB_2026_006',
@@ -2308,6 +2460,7 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
     original_url: 'https://www.facebook.com/groups/aodaisinhvien/posts/837465912',
     source_hashtag: '#VietPhucStylist',
     tags: ['#Facebook', '#VietPhuc3D', '#AoTuThan', '#DoDiChua'],
+    tags_en: ['#Facebook', '#VietPhuc3D', '#AoTuThan', '#PagodaAttire'],
     has_re_fit_3d: true,
     is_shoppable: true,
     detected_3d_link: 'https://vietphuc.app/3d/CFG_TUTHAN_CHUA_06',
@@ -2316,13 +2469,19 @@ export const INITIAL_SOCIAL_POSTS: SocialPostItem[] = [
     culture_guard_status: 'Approved',
     is_local_locked: true,
     title: 'Trảy hội Chùa Thầy diện Áo Tứ Thân mớ ba mớ bảy & Nón ba tầm',
+    title_en: 'Thay Pagoda Spring Pilgrimage in Layered Áo Tứ Thân & Nón Ba Tầm',
     caption:
       'Nhóm sinh viên chúng mình check-in hội xuân tại Chùa Thầy, Hà Nội. Link mẫu 3D: https://vietphuc.app/3d/CFG_TUTHAN_CHUA_06 · Link thuê đồ lễ hội: https://vietphuc.app/rent/dong-phong #VietPhucStylist',
+    caption_en:
+      'Our student group check-in at spring festival in Thay Pagoda, Hanoi. 3D model: https://vietphuc.app/3d/CFG_TUTHAN_CHUA_06 · Festival rental: https://vietphuc.app/rent/dong-phong #VietPhucStylist',
     contentCategory: 'Bài viết cộng đồng · Review thuê đồ lễ hội',
+    contentCategory_en: 'Community Post · Festival Attire Review',
     aspectRatio: '16:9',
     imageUrl: HERITAGE_IMAGES.aoTuThan,
     metricsLabel: '5.4K cảm xúc trên Facebook',
+    metricsLabel_en: '5.4K reactions on Facebook',
     publishedAt: '4 ngày trước',
+    publishedAt_en: '4 days ago',
     location_query: 'Chùa Thầy, Hà Nội',
     outfitConfig: {
       config_id: 'CFG_TUTHAN_CHUA_06',
@@ -2409,6 +2568,12 @@ export interface HeritageNewsArticle {
   relatedGarmentName: string;
   outfitConfig: OutfitConfigCode;
   aiPromptSuggestion: string;
+  // Optional English localization fields
+  title_en?: string;
+  subtitle_en?: string;
+  categoryLabel_en?: string;
+  locationOrSource_en?: string;
+  relatedGarmentName_en?: string;
 }
 
 export interface UpcomingHeritageEvent {
@@ -2424,6 +2589,13 @@ export interface UpcomingHeritageEvent {
   summary: string;
   outfitConfig: OutfitConfigCode;
   aiPromptSuggestion: string;
+  // Optional English localization fields
+  title_en?: string;
+  dateLabel_en?: string;
+  lunarDate_en?: string;
+  location_en?: string;
+  dressCode_en?: string;
+  summary_en?: string;
 }
 
 export const HERITAGE_NEWS_ARTICLES: HeritageNewsArticle[] = [
@@ -2443,6 +2615,12 @@ export const HERITAGE_NEWS_ARTICLES: HeritageNewsArticle[] = [
     readTime: '4 phút đọc',
     imageUrl: HERITAGE_IMAGES.aoNhatBinh,
     featured: true,
+    title_en: 'Decoding Flat Gold Thread Embroidery & Five-Color Bands on Late 19th-Century Áo Nhật Bình',
+    subtitle_en:
+      'Textile heritage research team publishes microstructural analysis of gold-wrapped silk threads and rectangular collar ratios on preserved Hue imperial Áo Nhật Bình artifacts.',
+    categoryLabel_en: 'Research & Archives',
+    locationOrSource_en: 'Hue Monuments Conservation Center',
+    relatedGarmentName_en: 'Áo Nhật Bình (Rectangular Collar · Five-Color Bands)',
     keyTakeaways: [
       'Cổ áo hình chữ nhật to bản khi cài khuy tạo thành chữ "Nhật" (日) chuẩn tỷ lệ 1:1.62 giúp tôn phần xương quai xanh.',
       'Dải ngũ sắc ở cổ tay tuân thủ nghiêm ngặt thứ tự tương sinh Ngũ Hành: Lục – Đỏ – Vàng – Trắng – Chàm.',
@@ -2489,6 +2667,12 @@ export const HERITAGE_NEWS_ARTICLES: HeritageNewsArticle[] = [
     readTime: '4 phút đọc',
     imageUrl: HERITAGE_IMAGES.festivalDenHung,
     hasStudioTryOn: false,
+    title_en: 'Hung Kings Temple Festival: Hundred Clans Palanquin Procession & Ancestral Traditions',
+    subtitle_en:
+      'Ancestral pilgrimage to Nghia Linh mountain with gilded palanquins, five-color banners, and bronze drums echoing across Phu Tho hills.',
+    categoryLabel_en: 'Traditional Festival',
+    locationOrSource_en: 'Hung Kings Temple Historical Site · Phu Tho',
+    relatedGarmentName_en: 'Hung Kings Ancestral Festival Regalia',
     festivalDetails: {
       lunarDate: 'Mùng 1 – Mùng 10 tháng 3 Âm lịch (Chính hội 10/3)',
       location: 'Núi Nghĩa Lĩnh, xã Hy Cương, TP. Việt Trì, Phú Thọ',
@@ -2542,6 +2726,12 @@ export const HERITAGE_NEWS_ARTICLES: HeritageNewsArticle[] = [
     readTime: '5 phút đọc',
     imageUrl: HERITAGE_IMAGES.realMaleStudio,
     hasStudioTryOn: true,
+    title_en: 'Newly Released Archives on Lord Nguyen Phuc Khoat’s 1744 Attire Reform & Minh Mang Protocols',
+    subtitle_en:
+      'From the 1744 royal decree establishing Áo Ngũ Thân standards in Dang Trong to nationwide costume unification under Emperor Minh Mang.',
+    categoryLabel_en: 'Research & Archives',
+    locationOrSource_en: 'Institute of Han-Nom Studies & National Archives',
+    relatedGarmentName_en: 'Men’s Áo Ngũ Thân (Standing Collar & Ceremonial)',
     keyTakeaways: [
       'Cấu trúc 5 thân (4 thân ngoài tượng trưng Tứ thân phụ mẫu, 1 thân con bên trong tượng trưng cho bản thân người mặc).',
       '5 hạt khuy (kim hoàn, ngọc hoặc gỗ) cài từ cổ xuống nách phải biểu trưng cho Ngũ Thường: Nhân – Nghĩa – Lễ – Trí – Tín.',
@@ -2587,6 +2777,12 @@ export const HERITAGE_NEWS_ARTICLES: HeritageNewsArticle[] = [
     readTime: '4 phút đọc',
     imageUrl: HERITAGE_IMAGES.festivalHoiLim,
     hasStudioTryOn: false,
+    title_en: 'Lim Festival of Kinh Bac: Quan Ho Duets on Dragon Boats & Spring Pilgrimage Customs',
+    subtitle_en:
+      'Discover Kinh Bac cultural beauty at Lim hill and Tieu Tuong river, where singers perform traditional Quan ho melodies beside ancient shrines.',
+    categoryLabel_en: 'Traditional Festival',
+    locationOrSource_en: 'Lim Hill, Tien Du · Bac Ninh',
+    relatedGarmentName_en: 'Kinh Bac Quan Ho Cultural Space',
     festivalDetails: {
       lunarDate: '12 – 13 tháng Giêng Âm lịch hàng năm',
       location: 'Thị trấn Lim, huyện Tiên Du, tỉnh Bắc Ninh',
@@ -2640,6 +2836,12 @@ export const HERITAGE_NEWS_ARTICLES: HeritageNewsArticle[] = [
     readTime: '4 phút đọc',
     imageUrl: HERITAGE_IMAGES.festivalCungDinhHue,
     hasStudioTryOn: false,
+    title_en: 'Hue Royal Palace Night: Imperial Court Music & Lantern Spectacle before Ngo Mon',
+    subtitle_en:
+      'Reenacting Nguyen Dynasty ceremonial music inside Hue Imperial Citadel with Changing of the Guard, court orchestras, and traditional silk lantern arts.',
+    categoryLabel_en: 'Traditional Festival',
+    locationOrSource_en: 'Imperial Citadel of Hue · Thua Thien Hue',
+    relatedGarmentName_en: 'Hue Imperial Court Music Heritage',
     festivalDetails: {
       lunarDate: 'Kỳ Festival Huế & Các đêm lễ hội Hoàng cung định kỳ',
       location: 'Quảng trường Ngọ Môn – Điện Thái Hòa – Thế Miếu, Đại Nội Huế',
@@ -2693,6 +2895,13 @@ export const UPCOMING_HERITAGE_EVENTS: UpcomingHeritageEvent[] = [
     dressCode: 'Áo Ngũ Thân Tay Chẽn / Áo Tấc / Áo Nhật Bình / Áo Tứ Thân',
     summary:
       'Diễu hành Việt phục qua các di tích lịch sử, giao lưu cùng các xưởng may cổ phục và workshop thắt khăn vấn, nhận diện điển chế trang phục.',
+    title_en: 'Bach Hoa Bo Hanh Heritage Costume Promenade — Autumn Hanoi',
+    dateLabel_en: 'Oct 18 – 19, 2026',
+    lunarDate_en: '9th Lunar Month, 08 – 09',
+    location_en: 'Thang Long Imperial Citadel & Hoan Kiem Walking Street, Hanoi',
+    dressCode_en: 'Fitted-Sleeve Áo Ngũ Thân / Áo Tấc / Áo Nhật Bình / Áo Tứ Thân',
+    summary_en:
+      'Traditional costume parade through historic sites, meet traditional atelier artisans, and attend headscarf knotting & attire code workshops.',
     outfitConfig: {
       config_id: 'EVT_CFG_NGUTHAN_01',
       gender: 'nu',
@@ -2723,6 +2932,13 @@ export const UPCOMING_HERITAGE_EVENTS: UpcomingHeritageEvent[] = [
     dressCode: 'Áo Nhật Bình / Áo Ngũ Thân Lễ Phục + Hài thêu hoặc Guốc mộc',
     summary:
       'Triển lãm hiện vật Áo Nhật Bình, Áo Tấc triều Nguyễn kết hợp đêm trình diễn ánh sáng và trải nghiệm mặc thử cổ phục trong không gian Đại Nội.',
+    title_en: 'Hue Imperial Heritage Costume Week & Royal Palace Night',
+    dateLabel_en: 'Nov 02 – 08, 2026',
+    lunarDate_en: '9th Lunar Month, 23 – 29',
+    location_en: 'Imperial Citadel of Hue & An Dinh Palace, Hue City',
+    dressCode_en: 'Áo Nhật Bình / Ceremonial Áo Ngũ Thân + Hài Thêu or Guốc Mộc',
+    summary_en:
+      'Exhibition of Nguyen Dynasty Áo Nhật Bình and Áo Tấc artifacts, light performance night, and heritage costume try-on in the Imperial Citadel.',
     outfitConfig: {
       config_id: 'EVT_CFG_NHATBINH_02',
       gender: 'nu',
@@ -2753,6 +2969,13 @@ export const UPCOMING_HERITAGE_EVENTS: UpcomingHeritageEvent[] = [
     dressCode: 'Áo Dài Tân Thời / Áo Bà Ba lụa tơ tằm / Áo Ngũ Thân tối giản',
     summary:
       'Trưng bày 80 mẫu dệt Lĩnh, Sa, Xuyến, Đũi và Lãnh Mỹ A từ các làng nghề truyền thống cùng talkshow ứng dụng Việt phục cho giới trẻ.',
+    title_en: 'Exhibition "Millennium Silk Thread" — Traditional Silk & Contemporary Attire',
+    dateLabel_en: 'Nov 21 – 25, 2026',
+    lunarDate_en: '10th Lunar Month, 12 – 16',
+    location_en: 'Ho Chi Minh City Fine Arts Museum',
+    dressCode_en: 'Modern Áo Dài / Mulberry Silk Áo Bà Ba / Minimalist Áo Ngũ Thân',
+    summary_en:
+      'Showcasing 80 silk weave samples from traditional craft villages with talkshows on heritage costume application for youth.',
     outfitConfig: {
       config_id: 'EVT_CFG_BABA_03',
       gender: 'nu',
@@ -3437,6 +3660,8 @@ export interface HeritageSiteRecord {
   points_awarded: number;
   badge_earned: string;
   imageUrl: string;
+  panoramaUrl: string;
+  hotspots360?: Array<{ label: string; yaw: number }>;
   outfitConfig: OutfitConfigCode;
 }
 
@@ -3494,6 +3719,12 @@ export const HERITAGE_MAP_SITES: HeritageSiteRecord[] = [
     points_awarded: 200,
     badge_earned: 'Khuê Văn Tri Thức',
     imageUrl: HERITAGE_IMAGES.aoNguThan,
+    panoramaUrl: HERITAGE_IMAGES.vanMieu360Panorama,
+    hotspots360: [
+      { label: '🏯 Khuê Văn Các', yaw: 180 },
+      { label: '🌊 Giếng Thiên Quang', yaw: 140 },
+      { label: '🐢 Vườn Bia Tiến Sĩ', yaw: 95 },
+    ],
     outfitConfig: {
       config_id: 'MAP_CFG_VANMIEU_01',
       gender: 'nu',
@@ -3532,6 +3763,12 @@ export const HERITAGE_MAP_SITES: HeritageSiteRecord[] = [
     points_awarded: 200,
     badge_earned: 'Ngọc Lập Kinh Kỳ',
     imageUrl: HERITAGE_IMAGES.realMaleStudio,
+    panoramaUrl: HERITAGE_IMAGES.hoangThanh360Panorama,
+    hotspots360: [
+      { label: '🏰 Cổng Đoan Môn', yaw: 180 },
+      { label: '🐉 Nền Điện Kính Thiên', yaw: 120 },
+      { label: '🚩 Cột Cờ Hà Nội', yaw: 240 },
+    ],
     outfitConfig: {
       config_id: 'MAP_CFG_HOANGTHANH_02',
       gender: 'nam',
@@ -3570,6 +3807,12 @@ export const HERITAGE_MAP_SITES: HeritageSiteRecord[] = [
     points_awarded: 180,
     badge_earned: 'Kinh Bắc Đào Hoa',
     imageUrl: HERITAGE_IMAGES.aoTuThan,
+    panoramaUrl: HERITAGE_IMAGES.duongLam360Panorama,
+    hotspots360: [
+      { label: '⛩️ Cổng Làng Mông Phụ', yaw: 180 },
+      { label: '🌳 Cây Đa Bến Nước', yaw: 125 },
+      { label: '🏛️ Sân Đình Đá Ong', yaw: 70 },
+    ],
     outfitConfig: {
       config_id: 'MAP_CFG_DUONGLAM_03',
       gender: 'nu',
@@ -3608,6 +3851,12 @@ export const HERITAGE_MAP_SITES: HeritageSiteRecord[] = [
     points_awarded: 200,
     badge_earned: 'Thanh Tịnh Cổ Tự',
     imageUrl: HERITAGE_IMAGES.model2DNuNguThan,
+    panoramaUrl: HERITAGE_IMAGES.chuaThay360Panorama,
+    hotspots360: [
+      { label: '🎭 Thủy Đình Múa Rối', yaw: 180 },
+      { label: '🌊 Hồ Long Chiểu', yaw: 130 },
+      { label: '🌉 Cầu Nhật Tiên Kiều', yaw: 75 },
+    ],
     outfitConfig: {
       config_id: 'MAP_CFG_CHUATHAY_04',
       gender: 'nu',
@@ -3646,6 +3895,12 @@ export const HERITAGE_MAP_SITES: HeritageSiteRecord[] = [
     points_awarded: 250,
     badge_earned: 'Cung Đình Hoài Cổ',
     imageUrl: HERITAGE_IMAGES.aoNhatBinh,
+    panoramaUrl: HERITAGE_IMAGES.daiNoiHue360Panorama,
+    hotspots360: [
+      { label: '👑 Ngọ Môn Quan', yaw: 180 },
+      { label: '🏛️ Điện Thái Hòa', yaw: 125 },
+      { label: '🪷 Cầu Trung Đạo & Hào Sen', yaw: 70 },
+    ],
     outfitConfig: {
       config_id: 'MAP_CFG_DAINOI_05',
       gender: 'nu',
@@ -3684,6 +3939,12 @@ export const HERITAGE_MAP_SITES: HeritageSiteRecord[] = [
     points_awarded: 200,
     badge_earned: 'Thư Hương Cố Đô',
     imageUrl: HERITAGE_IMAGES.model2DNuNhatBinh,
+    panoramaUrl: HERITAGE_IMAGES.langTuDuc360Panorama,
+    hotspots360: [
+      { label: '🪵 Xung Khiêm Tạ', yaw: 180 },
+      { label: '🌊 Hồ Lưu Khiêm', yaw: 125 },
+      { label: '🕯️ Điện Hòa Khiêm', yaw: 65 },
+    ],
     outfitConfig: {
       config_id: 'MAP_CFG_LANGTUDUC_06',
       gender: 'nu',
@@ -3722,6 +3983,12 @@ export const HERITAGE_MAP_SITES: HeritageSiteRecord[] = [
     points_awarded: 180,
     badge_earned: 'Bách Hoa Bộ Hành',
     imageUrl: HERITAGE_IMAGES.aoNguThan,
+    panoramaUrl: HERITAGE_IMAGES.hoiAn360Panorama,
+    hotspots360: [
+      { label: '🏮 Chùa Cầu Cổ Kính', yaw: 180 },
+      { label: '🚣 Bến Thuyền Sông Hoài', yaw: 120 },
+      { label: '✨ Phố Đèn Lồng Lung Linh', yaw: 60 },
+    ],
     outfitConfig: {
       config_id: 'MAP_CFG_HOIAN_07',
       gender: 'nu',
@@ -3760,6 +4027,12 @@ export const HERITAGE_MAP_SITES: HeritageSiteRecord[] = [
     points_awarded: 180,
     badge_earned: 'Phương Nam Hào Sảng',
     imageUrl: HERITAGE_IMAGES.aoDaiBaBa,
+    panoramaUrl: HERITAGE_IMAGES.binhThuy360Panorama,
+    hotspots360: [
+      { label: '🏛️ Tiền Sảnh Hoa Pháp', yaw: 180 },
+      { label: '🪜 Cầu Thang Cánh Cung', yaw: 135 },
+      { label: '🌸 Vườn Lan Cổ Thụ', yaw: 70 },
+    ],
     outfitConfig: {
       config_id: 'MAP_CFG_BINHTHUY_08',
       gender: 'nu',
@@ -3798,6 +4071,12 @@ export const HERITAGE_MAP_SITES: HeritageSiteRecord[] = [
     points_awarded: 180,
     badge_earned: 'Thanh Lịch Sài Gòn',
     imageUrl: HERITAGE_IMAGES.model2DNuBaBa,
+    panoramaUrl: HERITAGE_IMAGES.dinhDocLap360Panorama,
+    hotspots360: [
+      { label: '🎋 Rèm Hoa Đá Đốt Trúc', yaw: 180 },
+      { label: '⛲ Bồn Phun Nước Bãi Cỏ', yaw: 130 },
+      { label: '🏢 Khán Đài Trung Tâm', yaw: 70 },
+    ],
     outfitConfig: {
       config_id: 'MAP_CFG_DINHDOCLAP_09',
       gender: 'nu',
@@ -5347,6 +5626,19 @@ export interface CulturalKnowledgeCardPGC {
   location_query: string;
   relatedGarmentId: 'ao-ngu-than' | 'ao-nhat-binh' | 'ao-tu-than' | 'ao-dai-ba-ba';
   outfitConfig: OutfitConfigCode;
+  // Optional English localization fields
+  title_en?: string;
+  short_summary_en?: string;
+  category_tag_en?: string;
+  author_expert_en?: string;
+  expert_role_en?: string;
+  fun_fact_hook_en?: string;
+  bullet_points_en?: string[];
+  mini_quiz_en?: {
+    question: string;
+    options: string[];
+    explanation: string;
+  };
 }
 
 export const PGC_CULTURAL_KNOWLEDGE_CARDS: CulturalKnowledgeCardPGC[] = [
@@ -5375,6 +5667,28 @@ export const PGC_CULTURAL_KNOWLEDGE_CARDS: CulturalKnowledgeCardPGC[] = [
       explanation:
         'Chính xác! 5 hạt khuy (kim hoàn, ngọc hoặc gỗ) nhắc nhở người quân tử giữ trọn 5 phẩm chất Nhân – Nghĩa – Lễ – Trí – Tín.',
       pointsReward: 15,
+    },
+    title_en: 'The Moral Code Hidden Behind 5 Panels & the "Trung Phung" Seam',
+    short_summary_en:
+      'Beyond mere fashion, the 1744 royal decree of Lord Nguyen Phuc Khoat transformed the Áo Ngũ Thân into a wearable moral philosophy.',
+    category_tag_en: 'Secret of 1744 Decree',
+    author_expert_en: 'Institute of Sino-Nom & Costume History',
+    expert_role_en: 'Court Etiquette Specialist · PGC Verified',
+    fun_fact_hook_en: 'Did you know why Áo Ngũ Thân always has exactly 5 panels and 5 buttons?',
+    bullet_points_en: [
+      'The 4 outer flaps symbolize the Four Parents (biological parents and parents-in-law), while the inner 5th flap symbolizes the wearer themselves.',
+      'The 5 loop buttons from collar to right underarm represent the Five Constants: Benevolence, Righteousness, Propriety, Wisdom, Fidelity.',
+      'The straight central back seam (Trung Phung) reminds the wearer to maintain integrity and upright moral conduct.',
+    ],
+    mini_quiz_en: {
+      question: 'What moral philosophy do the 5 buttons on Áo Ngũ Thân represent?',
+      options: [
+        'Five Constants (Benevolence, Righteousness, Propriety, Wisdom, Fidelity)',
+        'Five Elements (Metal, Wood, Water, Fire, Earth)',
+        'Five Blessings at the Gate',
+      ],
+      explanation:
+        'Correct! The 5 buttons (gold, jade, or wood) remind the honorable individual to practice Benevolence, Righteousness, Propriety, Wisdom, and Fidelity.',
     },
     imageUrl: HERITAGE_IMAGES.realMaleStudio,
     location_query: 'Văn Miếu - Quốc Tử Giám, Hà Nội',
@@ -5421,6 +5735,28 @@ export const PGC_CULTURAL_KNOWLEDGE_CARDS: CulturalKnowledgeCardPGC[] = [
         'Chuẩn xác! Cổ áo đối khố bản rộng khi khép trước ngực tạo thành hình chữ Nhật (日) vuông vức, uy nghi.',
       pointsReward: 15,
     },
+    title_en: 'Decoding Áo Nhật Bình: From Imperial Concubines to Modern Wedding Attire',
+    short_summary_en:
+      'The name "Nhật Bình" originates from the symmetrical rectangular shape (日) formed when the front overlapping collar bands are fastened.',
+    category_tag_en: 'Imperial Court Anatomy',
+    author_expert_en: 'Hue Monuments Conservation Centre',
+    expert_role_en: 'Court Costume Research · PGC Verified',
+    fun_fact_hook_en: 'Why does Áo Nhật Bình have a rectangular collar and 5-color wrist bands?',
+    bullet_points_en: [
+      'The broad rectangular collar embroidered with Phoenix and Eight Treasures motifs strictly denoted ranks among Empress, Princesses, and Concubines.',
+      'The five-color bands (green, yellow, blue, white, pink) on sleeves symbolize imperial auspicious five-colored clouds.',
+      'Modern wearing etiquette: Avoid pairing with jeans or miniskirts at sacred heritage sanctuaries (Culture Guard protocol).',
+    ],
+    mini_quiz_en: {
+      question: 'Which structural feature gives Áo Nhật Bình its distinctive name?',
+      options: [
+        'The collar panels meet in front to form the rectangular "Nhat" (日) character',
+        'The garment was only worn during daytime under direct sunlight',
+        'The solar embroidery motif located on the back panel',
+      ],
+      explanation:
+        'Accurate! The wide front panels when fastened create a regal, symmetrical rectangular "Nhat" (日) shape.',
+    },
     imageUrl: HERITAGE_IMAGES.aoNhatBinh,
     location_query: 'Đại Nội Huế, Thừa Thiên Huế',
     relatedGarmentId: 'ao-nhat-binh',
@@ -5465,6 +5801,28 @@ export const PGC_CULTURAL_KNOWLEDGE_CARDS: CulturalKnowledgeCardPGC[] = [
       explanation:
         'Chính xác! Nón Quai Thao là phụ kiện nữ giới đi cùng Áo Tứ Thân; Áo Ngũ Thân nam chuẩn mực đi cùng Khăn đóng/Khăn xếp.',
       pointsReward: 15,
+    },
+    title_en: 'The Art of Multi-Layering "Mo Ba Mo Bay" and Quan Ho Accessory Etiquette',
+    short_summary_en:
+      'In Northern folk performances, the attire of Lien Anh (male singers) and Lien Chi (female singers) follows strictly codified distinctions.',
+    category_tag_en: 'Kinh Bac Folk Heritage',
+    author_expert_en: 'Bac Ninh Quan Ho Folk Heritage Association',
+    expert_role_en: 'Folk Culture Advisor · PGC Verified',
+    fun_fact_hook_en: 'Nón Ba Tầm (Quai Thao) is strictly for Lien Chi — Why did men never wear it?',
+    bullet_points_en: [
+      'Áo Tứ Thân has 2 back panels sewn together and 2 front panels tied loosely to accentuate the crimson Yếm and silk sash.',
+      'Nón Ba Tầm (~75cm diameter with silk tassels) is exclusive to Kinh Bac women and never paired with male Áo Ngũ Thân.',
+      'Flowing black silk wrap skirts enable graceful steps during call-and-response singing on dragon boats at Lim Festival.',
+    ],
+    mini_quiz_en: {
+      question: 'According to Culture Guard, which outfit combination violates traditional etiquette?',
+      options: [
+        'Wearing Nón Quai Thao with Male Áo Ngũ Thân',
+        'Pairing Áo Tứ Thân with Crimson Yếm and Black Wrap Skirt',
+        'Wearing Khăn Xếp with Fitted-Sleeve Áo Ngũ Thân',
+      ],
+      explanation:
+        'Correct! Nón Quai Thao is a female accessory accompanying Áo Tứ Thân; male Áo Ngũ Thân properly pairs with Khăn Xếp / Khăn Đóng.',
     },
     imageUrl: HERITAGE_IMAGES.festivalHoiLim,
     location_query: 'Chùa Thầy, Sài Sơn, Quốc Oai, Hà Nội',
@@ -5646,7 +6004,7 @@ export function buildMandatoryAccountProfileJson(params: {
     culture_guard_result: {
       status: guardStatus,
       applied_rule: firstViolation
-        ? firstViolation.title
+        ? firstViolation.ruleId
         : 'RULE_ALL_PASSED (Đạt chuẩn cổ lệ Việt phục)',
       culture_tip_message: firstViolation
         ? firstViolation.message
@@ -5656,12 +6014,126 @@ export function buildMandatoryAccountProfileJson(params: {
   };
 }
 
+// ============================================================================
+// BILINGUAL LOCALIZATION HELPERS FOR HERITAGE EVENTS, KNOWLEDGE CARDS & SOCIAL
+// ============================================================================
 
+export function getLocalizedHeritageEvent(
+  event: UpcomingHeritageEvent,
+  isEn: boolean
+): UpcomingHeritageEvent {
+  if (!isEn) return event;
+  return {
+    ...event,
+    title: event.title_en || event.title,
+    dateLabel: event.dateLabel_en || event.dateLabel,
+    lunarDate: event.lunarDate_en || event.lunarDate,
+    location: event.location_en || event.location,
+    dressCode: event.dressCode_en || event.dressCode,
+    summary: event.summary_en || event.summary,
+  };
+}
 
+export function getLocalizedKnowledgeCard(
+  card: CulturalKnowledgeCardPGC,
+  isEn: boolean
+): CulturalKnowledgeCardPGC {
+  if (!isEn) return card;
+  return {
+    ...card,
+    title: card.title_en || card.title,
+    short_summary: card.short_summary_en || card.short_summary,
+    category_tag: card.category_tag_en || card.category_tag,
+    author_expert: card.author_expert_en || card.author_expert,
+    expert_role: card.expert_role_en || card.expert_role,
+    fun_fact_hook: card.fun_fact_hook_en || card.fun_fact_hook,
+    bullet_points: card.bullet_points_en || card.bullet_points,
+    mini_quiz: card.mini_quiz_en
+      ? {
+          ...card.mini_quiz,
+          question: card.mini_quiz_en.question,
+          options: card.mini_quiz_en.options,
+          explanation: card.mini_quiz_en.explanation,
+        }
+      : card.mini_quiz,
+  };
+}
 
+export function getLocalizedSocialPost(
+  post: SocialPostItem,
+  isEn: boolean
+): SocialPostItem {
+  if (!isEn) return post;
+  return {
+    ...post,
+    title: post.title_en || post.title,
+    caption: post.caption_en || post.caption,
+    contentCategory: post.contentCategory_en || post.contentCategory,
+    metricsLabel: post.metricsLabel_en || formatLocalizedMetrics(post.metricsLabel, true),
+    publishedAt: post.publishedAt_en || formatLocalizedPublishedAt(post.publishedAt, true),
+    tags: post.tags_en || post.tags,
+    festivalDetails: post.festivalDetails
+      ? {
+          ...post.festivalDetails,
+          ...(post.festivalDetails_en || {}),
+        }
+      : undefined,
+  };
+}
 
+export function formatLocalizedMetrics(label: string, isEn: boolean): string {
+  if (!isEn || !label) return label;
+  return label
+    .replace('lượt xem trên', 'views on')
+    .replace('lượt chia sẻ trên', 'shares on')
+    .replace('lượt thích trên', 'likes on')
+    .replace('cảm xúc trên', 'reactions on')
+    .replace('lượt xem', 'views')
+    .replace('lượt thích', 'likes')
+    .replace('lượt chia sẻ', 'shares')
+    .replace('cảm xúc', 'reactions');
+}
 
+export function formatLocalizedPublishedAt(publishedAt: string, isEn: boolean): string {
+  if (!isEn || !publishedAt) return publishedAt;
+  if (publishedAt === 'vừa xong') return 'just now';
+  return publishedAt
+    .replace(/(\d+)\s*giờ trước/, '$1 hours ago')
+    .replace(/(\d+)\s*ngày trước/, '$1 days ago')
+    .replace(/1 days ago/, '1 day ago')
+    .replace(/(\d+)\s*phút trước/, '$1 mins ago');
+}
 
+export function getLocalizedPartner(
+  partner: VerifiedPartnerVendorItem,
+  isEn: boolean
+): VerifiedPartnerVendorItem {
+  if (!isEn) return partner;
+  return {
+    ...partner,
+    vendor_name: partner.vendor_name_en || partner.vendor_name,
+    shop_type_label: partner.shop_type_label_en || partner.shop_type_label,
+    region_label: partner.region_label_en || partner.region_label,
+    specialty_title: partner.specialty_title_en || partner.specialty_title,
+    description: partner.description_en || partner.description,
+    rental_price_per_day: partner.rental_price_per_day_en || partner.rental_price_per_day,
+    tailoring_price_from: partner.tailoring_price_from_en || partner.tailoring_price_from,
+    smart_tags: partner.smart_tags_en || partner.smart_tags,
+  };
+}
 
-
+export function getLocalizedArticle(
+  article: HeritageNewsArticle,
+  isEn: boolean
+): HeritageNewsArticle {
+  if (!isEn) return article;
+  return {
+    ...article,
+    title: article.title_en || article.title,
+    subtitle: article.subtitle_en || article.subtitle,
+    categoryLabel: article.categoryLabel_en || article.categoryLabel,
+    locationOrSource: article.locationOrSource_en || article.locationOrSource,
+    relatedGarmentName: article.relatedGarmentName_en || article.relatedGarmentName,
+  };
+}
 

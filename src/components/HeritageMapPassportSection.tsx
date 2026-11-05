@@ -29,6 +29,7 @@ import {
   Sun,
   RotateCw,
   UserCheck,
+  Upload,
 } from 'lucide-react';
 import {
   HERITAGE_MAP_SITES,
@@ -53,9 +54,11 @@ import {
   evaluateProfileHeritageBadges,
   buildDigitalPassportOmnichannelJson,
   formatCulturalPassportText,
+  getLocalizedHeritageEvent,
 } from '../data/vietPhucData';
 import { ResilientImage } from './ResilientImage';
 import { Tour360Avatar3D } from './Tour360Avatar3D';
+import { AppLanguage, TRANSLATIONS, getLocalizedGarmentName } from '../utils/i18n';
 
 interface HeritageMapPassportSectionProps {
   userName?: string;
@@ -71,6 +74,7 @@ interface HeritageMapPassportSectionProps {
   pinnedBadgeId?: string;
   onSelectPinnedBadge?: (badgeId: string) => void;
   onAwardOmnichannelPoints?: (entry: Omit<OmnichannelPointEntry, 'id' | 'timestamp'>) => void;
+  language?: AppLanguage;
 }
 
 const OUTFIT_LABELS: Record<PrimaryOutfitCode, string> = {
@@ -135,7 +139,14 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
   pinnedBadgeId = 'BADGE_THANG_LONG_CO_TICH',
   onSelectPinnedBadge,
   onAwardOmnichannelPoints,
+  language = 'vi',
 }) => {
+  const lang = language || 'vi';
+  const isEn = lang === 'en';
+  const tDict = TRANSLATIONS[lang] || TRANSLATIONS.vi;
+  const tMap = tDict.heritageMap;
+  const tCommon = tDict.common;
+
   const [regionFilter, setRegionFilter] = useState<'ALL' | HeritageRegionCode>('ALL');
   const [selectedSite, setSelectedSite] = useState<HeritageSiteRecord>(HERITAGE_MAP_SITES[0]);
   const [searchQueryInput, setSearchQueryInput] = useState<string>('');
@@ -507,75 +518,119 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
         radiusMeters: radiusFilter,
       });
 
+      let checkInData: any = null;
       try {
-        await fetch('/api/heritage-map/checkin', {
+        const res = await fetch('/api/heritage-map/checkin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             site: selectedSite,
             outfitChosen: detectedOutfitCode,
             locationVerified: isMatched,
+            distanceMeters,
+            userCoords: { lat, lng },
+            siteCoords: targetCoords,
+            photoBase64: photoDataUrl,
             localEvaluation: localEval,
           }),
         });
-      } catch {
-        // Offline fallback
+        if (res.ok) {
+          checkInData = await res.json();
+        }
+      } catch (err) {
+        console.warn('Checkin API request failed:', err);
       }
 
       setIsVerifyingAIAndGPS(false);
+
+      const cultureStatus = checkInData?.culture_guard_status || (isMatched ? 'APPROVED' : 'WARNING');
+      const isApproved = cultureStatus === 'APPROVED';
+      const canUnlock = Boolean(checkInData?.is_unlocked ?? (isMatched && isApproved));
+      const aiOutfitName = checkInData?.outfit_detected || detectedOutfitLabel;
+
       setVerificationResult({
         gpsCoordsText,
-        detectedOutfitLabel,
+        detectedOutfitLabel: aiOutfitName,
         isMatched,
-        verificationStatus: 'VERIFIED',
+        verificationStatus: canUnlock ? 'VERIFIED' : 'PENDING_OFFLINE_VERIFICATION',
       });
 
-      if (isMatched) {
+      if (canUnlock) {
         onUnlockStamp({
           site_id: selectedSite.id,
           stamp_id: selectedSite.stamp_id,
           stamp_name: selectedSite.stamp_name,
           location_query: selectedSite.location_query,
           site_name: selectedSite.site_name,
-          outfit_worn: detectedOutfitLabel,
+          outfit_worn: aiOutfitName,
           points_awarded: selectedSite.points_awarded,
           badge_earned: selectedSite.badge_earned,
           unlocked_at: new Date().toLocaleDateString('vi-VN'),
           photo_url: photoDataUrl,
           status: 'VERIFIED',
         });
+        if (onAwardOmnichannelPoints) {
+          onAwardOmnichannelPoints({
+            source: 'HERITAGE_CHECKIN',
+            sourceLabel: 'Check-in Di Tích',
+            description: `Check-in thành công tại ${selectedSite.site_name} (${aiOutfitName})`,
+            points: selectedSite.points_awarded,
+          });
+        }
+        setShareToast(
+          `✅ Gemini Vision đã phê duyệt: ${aiOutfitName}! Nhận ấn "${selectedSite.stamp_name}" (+${selectedSite.points_awarded}đ)`
+        );
+        setTimeout(() => setShareToast(null), 4000);
+      } else if (!isMatched) {
+        setShareToast(
+          `⚠️ Khoảng cách thực tế: ${Math.round(distanceMeters)}m (vượt quá bán kính 500m). Cần có mặt tại ${selectedSite.site_name} để nhận con dấu!`
+        );
+        setTimeout(() => setShareToast(null), 4000);
+      } else if (!isApproved) {
+        setShareToast(
+          `❌ Culture Guard (${cultureStatus}): ${checkInData?.feedback_message || 'Ảnh chưa đạt quy chuẩn cổ phục tôn nghiêm tại di tích.'}`
+        );
+        setTimeout(() => setShareToast(null), 4500);
       }
     };
 
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const dist = calculateHaversineDistanceMeters(
-            pos.coords.latitude,
-            pos.coords.longitude,
-            targetCoords.lat,
-            targetCoords.lng
-          );
-          const resolvedLat =
-            dist <= GPS_MATCH_RADIUS_METERS ? pos.coords.latitude : targetCoords.lat;
-          const resolvedLng =
-            dist <= GPS_MATCH_RADIUS_METERS ? pos.coords.longitude : targetCoords.lng;
+          // Use real device coordinates without auto-overriding
           setTimeout(() => {
-            verifyCoordinatesAndUnlock(resolvedLat, resolvedLng);
-          }, 450);
+            verifyCoordinatesAndUnlock(pos.coords.latitude, pos.coords.longitude);
+          }, 400);
         },
         () => {
+          // Simulation fallback for browser testing when GPS is blocked
           setTimeout(() => {
-            verifyCoordinatesAndUnlock(targetCoords.lat, targetCoords.lng);
-          }, 450);
+            verifyCoordinatesAndUnlock(targetCoords.lat + 0.0006, targetCoords.lng + 0.0006);
+          }, 400);
         },
-        { timeout: 2500, enableHighAccuracy: true }
+        { timeout: 3500, enableHighAccuracy: true }
       );
     } else {
       setTimeout(() => {
-        verifyCoordinatesAndUnlock(targetCoords.lat, targetCoords.lng);
-      }, 450);
+        verifyCoordinatesAndUnlock(targetCoords.lat + 0.0006, targetCoords.lng + 0.0006);
+      }, 400);
     }
+  };
+
+  // Upload Photo for Check-In
+  const handleUploadPhotoForCheckIn = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        const photoUrl = reader.result;
+        setCapturedPhotoUrl(photoUrl);
+        stopCamera();
+        triggerGPSAndAIVerification(photoUrl);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Start Camera or Capture Immediately
@@ -854,13 +909,21 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
     profileBadges[0];
 
   const rankTitle =
-    unlockedStamps.length >= 7
-      ? 'Đại Sứ Văn Hóa'
-      : unlockedStamps.length >= 5
-      ? 'Sứ Giả Di Sản'
-      : unlockedStamps.length >= 3
-      ? 'Bậc Thầy Hành Trình'
-      : 'Thợ Phối Tập Sự';
+    lang === 'en'
+      ? (unlockedStamps.length >= 7
+          ? 'Cultural Ambassador'
+          : unlockedStamps.length >= 5
+          ? 'Heritage Envoy'
+          : unlockedStamps.length >= 3
+          ? 'Master Voyager'
+          : 'Novice Stylist')
+      : (unlockedStamps.length >= 7
+          ? 'Đại Sứ Văn Hóa'
+          : unlockedStamps.length >= 5
+          ? 'Sứ Giả Di Sản'
+          : unlockedStamps.length >= 3
+          ? 'Bậc Thầy Hành Trình'
+          : 'Thợ Phối Tập Sự');
 
   // Next Badge Milestone & Next Unvisited Heritage Site for Gamification Dashboard
   const nextLockedBadge = profileBadges.find((b) => !b.is_unlocked) || null;
@@ -976,10 +1039,10 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                        Huy hiệu &amp; Cấp bậc
+                        {isEn ? 'Badges & Heritage Ranks' : 'Huy hiệu & Cấp bậc'}
                       </span>
                       <span className="px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-bold">
-                        {unlockedBadgesCount}/{profileBadges.length} Huy hiệu
+                        {unlockedBadgesCount}/{profileBadges.length} {isEn ? 'Badges' : 'Huy hiệu'}
                       </span>
                     </div>
                     <div className="text-xs sm:text-sm font-bold text-zinc-950 truncate mt-0.5">
@@ -993,7 +1056,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                   onClick={() => setShowGamificationDetails((prev) => !prev)}
                   className="px-2 py-1 rounded-lg border border-zinc-200 hover:bg-zinc-100 text-[11px] font-semibold text-zinc-700 shrink-0 cursor-pointer flex items-center gap-1"
                 >
-                  <span>{showGamificationDetails ? 'Ẩn' : 'Chi tiết'}</span>
+                  <span>{showGamificationDetails ? (isEn ? 'Hide' : 'Ẩn') : (isEn ? 'Details' : 'Chi tiết')}</span>
                   <ChevronDown
                     className={`w-3 h-3 transition-transform ${
                       showGamificationDetails ? 'rotate-180' : ''
@@ -1017,7 +1080,11 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                       }}
                       title={
                         badge.is_unlocked
-                          ? `${badge.name} (${badge.rankTitle}) — Bấm để đính lên hồ sơ`
+                          ? isEn
+                            ? `${badge.name} (${badge.rankTitle}) — Click to pin to profile`
+                            : `${badge.name} (${badge.rankTitle}) — Bấm để đính lên hồ sơ`
+                          : isEn
+                          ? `Locked: ${badge.name} (Requires ${badge.required_count} site check-ins)`
                           : `Chưa mở: ${badge.name} (Cần check-in ${badge.required_count} di tích)`
                       }
                       className={`px-2 py-1 rounded-lg border text-[11px] font-semibold flex items-center gap-1 transition-all ${
@@ -1036,7 +1103,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                   ))}
                 </div>
                 <span className="text-[11px] font-mono-tabular font-semibold text-zinc-500 shrink-0">
-                  {unlockedStamps.length}/{HERITAGE_MAP_SITES.length} Con dấu
+                  {unlockedStamps.length}/{HERITAGE_MAP_SITES.length} {isEn ? 'Stamps' : 'Con dấu'}
                 </span>
               </div>
             </div>
@@ -1046,20 +1113,24 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
                   <Award className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Điểm Di sản tích lũy</span>
+                  <span>{isEn ? 'Accumulated Heritage Points' : 'Điểm Di sản tích lũy'}</span>
                 </span>
                 <span className="text-[10px] font-mono-tabular font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md">
-                  Mốc {nextPointTierTarget}đ
+                  {isEn ? `Tier ${nextPointTierTarget} pts` : `Mốc ${nextPointTierTarget}đ`}
                 </span>
               </div>
 
               <div className="flex items-baseline justify-between gap-2">
                 <div className="text-xl sm:text-2xl font-extrabold font-mono-tabular tracking-tight text-zinc-950">
-                  {totalPoints.toLocaleString('vi-VN')}
-                  <span className="text-xs font-semibold text-zinc-500 ml-1">điểm</span>
+                  {totalPoints.toLocaleString(isEn ? 'en-US' : 'vi-VN')}
+                  <span className="text-xs font-semibold text-zinc-500 ml-1">
+                    {isEn ? 'pts' : 'điểm'}
+                  </span>
                 </div>
                 <div className="text-[10px] text-zinc-500 font-mono-tabular">
-                  Còn {Math.max(0, nextPointTierTarget - totalPoints)}đ nhận ưu đãi
+                  {isEn
+                    ? `${Math.max(0, nextPointTierTarget - totalPoints)} pts to next reward`
+                    : `Còn ${Math.max(0, nextPointTierTarget - totalPoints)}đ nhận ưu đãi`}
                 </div>
               </div>
 
@@ -1074,9 +1145,9 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                 <div className="flex items-center justify-between text-[10px] text-zinc-500 font-mono-tabular">
                   <span>Check-in +{stampPoints + eventPoints}</span>
                   <span>·</span>
-                  <span>Cộng đồng +{socialPoints}</span>
+                  <span>{isEn ? 'Community' : 'Cộng đồng'} +{socialPoints}</span>
                   <span>·</span>
-                  <span>Thuê/May +{partnerPoints}</span>
+                  <span>{isEn ? 'Rent/Tailor' : 'Thuê/May'} +{partnerPoints}</span>
                 </div>
               </div>
             </div>
@@ -1088,7 +1159,11 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                   <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
                   <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 truncate">
                     {nextLockedBadge
-                      ? `Cột mốc tiếp theo: ${nextLockedBadge.icon} ${nextLockedBadge.name} (Còn ${remainingSitesForNextBadge} di tích)`
+                      ? isEn
+                        ? `Next Milestone: ${nextLockedBadge.icon} ${nextLockedBadge.name} (${remainingSitesForNextBadge} sites remaining)`
+                        : `Cột mốc tiếp theo: ${nextLockedBadge.icon} ${nextLockedBadge.name} (Còn ${remainingSitesForNextBadge} di tích)`
+                      : isEn
+                      ? '🎉 All Heritage Badges Achieved!'
                       : '🎉 Đã chinh phục toàn bộ Huy hiệu Di sản!'}
                   </span>
                 </div>
@@ -1097,9 +1172,9 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                     type="button"
                     onClick={() => setNextSiteCursor((prev) => prev + 1)}
                     className="text-[10px] font-semibold text-zinc-400 hover:text-white cursor-pointer shrink-0"
-                    title="Xem gợi ý di tích chưa đóng dấu khác"
+                    title={isEn ? 'Show another unvisited site suggestion' : 'Xem gợi ý di tích chưa đóng dấu khác'}
                   >
-                    Đổi gợi ý ↻
+                    {isEn ? 'Shuffle suggestion ↻' : 'Đổi gợi ý ↻'}
                   </button>
                 )}
               </div>
@@ -1121,11 +1196,12 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                       {suggestedNextSite.site_name}
                     </span>
                     <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-mono-tabular text-[10px] font-bold shrink-0">
-                      +{suggestedNextSite.points_awarded}đ
+                      +{suggestedNextSite.points_awarded}{isEn ? ' pts' : 'đ'}
                     </span>
                   </div>
                   <p className="text-[11px] text-zinc-400 truncate mt-0.5">
-                    Dresscode gợi ý: <strong className="text-zinc-200">{suggestedNextSite.dresscodeLabel.split(' (')[0]}</strong>
+                    {isEn ? 'Suggested dresscode:' : 'Dresscode gợi ý:'}{' '}
+                    <strong className="text-zinc-200">{suggestedNextSite.dresscodeLabel.split(' (')[0]}</strong>
                   </p>
                 </div>
 
@@ -1134,10 +1210,14 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                     type="button"
                     onClick={() => onApplyOutfitConfigToStudio(suggestedNextSite.outfitConfig)}
                     className="px-2.5 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer transition-colors"
-                    title={`Mặc thử ngay Dresscode cho ${suggestedNextSite.site_name} tại Studio`}
+                    title={
+                      isEn
+                        ? `Try dresscode for ${suggestedNextSite.site_name} in Studio`
+                        : `Mặc thử ngay Dresscode cho ${suggestedNextSite.site_name} tại Studio`
+                    }
                   >
                     <Cuboid className="w-3.5 h-3.5" />
-                    <span>Thử đồ 3D</span>
+                    <span>{isEn ? 'Try in 3D' : 'Thử đồ 3D'}</span>
                   </button>
 
                   <button
@@ -1147,9 +1227,13 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                       setRightTab('CHECKIN');
                     }}
                     className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 text-[11px] font-semibold inline-flex items-center gap-1 cursor-pointer transition-colors"
-                    title="Định vị ngay di tích này trên Bản đồ để Check-in GPS"
+                    title={
+                      isEn
+                        ? 'Locate this site on map for GPS check-in'
+                        : 'Định vị ngay di tích này trên Bản đồ để Check-in GPS'
+                    }
                   >
-                    <span>Chọn di tích</span>
+                    <span>{isEn ? 'Select Site' : 'Chọn di tích'}</span>
                     <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
@@ -1164,10 +1248,12 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
               <div className="lg:col-span-5 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-zinc-900">
-                    Lộ trình 4 Cấp bậc Huy hiệu Di sản
+                    {isEn ? '4-Tier Heritage Badge Roadmap' : 'Lộ trình 4 Cấp bậc Huy hiệu Di sản'}
                   </span>
                   <span className="text-[11px] text-zinc-500">
-                    Bấm vào huy hiệu đã mở để đính lên Profile
+                    {isEn
+                      ? 'Click unlocked badge to pin to Profile'
+                      : 'Bấm vào huy hiệu đã mở để đính lên Profile'}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1198,7 +1284,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                               badge.is_pinned ? 'text-amber-300' : 'text-zinc-500'
                             }`}
                           >
-                            {badge.rankTitle} · {badge.collected_count}/{badge.required_count} di tích
+                            {badge.rankTitle} · {badge.collected_count}/{badge.required_count} {isEn ? 'sites' : 'di tích'}
                           </div>
                         </div>
                       </div>
@@ -1211,7 +1297,17 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                             : 'bg-zinc-200 text-zinc-600'
                         }`}
                       >
-                        {badge.is_pinned ? 'Đang đính' : badge.is_unlocked ? 'Đã mở' : 'Khóa'}
+                        {badge.is_pinned
+                          ? isEn
+                            ? 'Pinned'
+                            : 'Đang đính'
+                          : badge.is_unlocked
+                          ? isEn
+                            ? 'Unlocked'
+                            : 'Đã mở'
+                          : isEn
+                          ? 'Locked'
+                          : 'Khóa'}
                       </span>
                     </button>
                   ))}
@@ -1222,10 +1318,14 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
               <div className="lg:col-span-7 space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-zinc-900">
-                    Các cột mốc di tích tiếp theo ({unvisitedSites.length} địa danh chưa đóng dấu)
+                    {isEn
+                      ? `Next Heritage Milestones (${unvisitedSites.length} unvisited sites)`
+                      : `Các cột mốc di tích tiếp theo (${unvisitedSites.length} địa danh chưa đóng dấu)`}
                   </span>
                   <span className="text-[11px] text-zinc-500">
-                    Mặc thử Dresscode 3D trước khi tới Check-in
+                    {isEn
+                      ? 'Try on 3D dresscode before GPS check-in'
+                      : 'Mặc thử Dresscode 3D trước khi tới Check-in'}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1250,7 +1350,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                             </div>
                             <p className="text-[11px] text-zinc-500 truncate mt-0.5">
                               {site.dresscodeLabel.split(' (')[0]} ·{' '}
-                              <strong className="text-emerald-700">+{site.points_awarded}đ</strong>
+                              <strong className="text-emerald-700">+{site.points_awarded}{isEn ? ' pts' : 'đ'}</strong>
                             </p>
                           </div>
 
@@ -1260,7 +1360,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                               onClick={() => onApplyOutfitConfigToStudio(site.outfitConfig)}
                               className="px-2 py-1 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white text-[10px] font-semibold cursor-pointer"
                             >
-                              Thử 3D
+                              {isEn ? 'Try 3D' : 'Thử 3D'}
                             </button>
                             <button
                               type="button"
@@ -1270,7 +1370,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                               }}
                               className="px-2 py-1 rounded-lg border border-zinc-200 hover:bg-zinc-100 text-zinc-700 text-[10px] font-semibold cursor-pointer"
                             >
-                              Bản đồ
+                              {isEn ? 'Map' : 'Bản đồ'}
                             </button>
                           </div>
                         </div>
@@ -1286,14 +1386,14 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
         {/* Minimalist Top Bar: Title + Search + Region Pills */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-bold tracking-tight text-zinc-950">Bản đồ Di sản</h2>
+            <h2 className="text-lg font-bold tracking-tight text-zinc-950">{tMap.tabMap}</h2>
             <form onSubmit={handleCustomQuerySearch} className="relative flex items-center">
               <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 pointer-events-none" />
               <input
                 type="text"
                 value={searchQueryInput}
                 onChange={(e) => setSearchQueryInput(e.target.value)}
-                placeholder="Tìm di tích..."
+                placeholder={tMap.searchPlaceholder}
                 className="pl-7 pr-2.5 py-1 rounded-full border border-zinc-200 bg-white text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-900 w-40 sm:w-48"
               />
             </form>
@@ -1302,10 +1402,10 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
           <div className="flex items-center gap-1 overflow-x-auto">
             {(
               [
-                { id: 'ALL', label: 'Tất cả' },
-                { id: 'MIEN_BAC', label: 'Miền Bắc' },
-                { id: 'MIEN_TRUNG', label: 'Miền Trung' },
-                { id: 'MIEN_NAM', label: 'Miền Nam' },
+                { id: 'ALL', label: tMap.regionAll },
+                { id: 'MIEN_BAC', label: tMap.regionNorth },
+                { id: 'MIEN_TRUNG', label: tMap.regionCentral },
+                { id: 'MIEN_NAM', label: tMap.regionSouth },
               ] as const
             ).map((tab) => (
               <button
@@ -1368,7 +1468,11 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                     setActivePinMode('HERO');
                     setShowSiteInfo((prev) => !prev);
                   }}
-                  title="Ấn vào tên di tích để xem lịch sử & lưu ý trang phục"
+                  title={
+                    isEn
+                      ? 'Click site name to view history & dresscode etiquette'
+                      : 'Ấn vào tên di tích để xem lịch sử & lưu ý trang phục'
+                  }
                   className="inline-flex items-center gap-1.5 text-left cursor-pointer group min-w-0"
                 >
                   <span className="w-2 h-2 rounded-full bg-zinc-950 shrink-0" />
@@ -1376,7 +1480,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                     {selectedSite.site_name}
                   </span>
                   <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-zinc-100 text-zinc-600 text-[10px] font-semibold shrink-0">
-                    <span>Lưu ý</span>
+                    <span>{isEn ? 'Notes' : 'Lưu ý'}</span>
                     <ChevronDown
                       className={`w-3 h-3 transition-transform ${
                         showSiteInfo ? 'rotate-180' : ''
@@ -1428,13 +1532,17 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                       : 'bg-white text-zinc-600 border-zinc-200 hover:text-zinc-950'
                   }`}
                 >
-                  {showPinOverlayOnMap ? 'Ghim' : 'Bản đồ'}
+                  {showPinOverlayOnMap ? (isEn ? 'Pins' : 'Ghim') : (isEn ? 'Map' : 'Bản đồ')}
                 </button>
 
                 <button
                   type="button"
                   onClick={() => setIsVirtualTour360Open((prev) => !prev)}
-                  title="Bật/Tắt Tham quan ảo 360° & Đặt Avatar Việt Phục"
+                  title={
+                    isEn
+                      ? 'Toggle 360° Virtual Tour & Place Avatar'
+                      : 'Bật/Tắt Tham quan ảo 360° & Đặt Avatar Việt Phục'
+                  }
                   className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-colors inline-flex items-center gap-1 cursor-pointer ${
                     isVirtualTour360Open
                       ? 'bg-amber-500 text-zinc-950 border-amber-500 font-bold shadow-2xs'
@@ -1449,7 +1557,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                   href={currentEvaluation.maps_integration_lite.direct_google_maps_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  title="Mở trên Google Maps"
+                  title={isEn ? 'Open on Google Maps' : 'Mở trên Google Maps'}
                   className="p-1.5 rounded-lg border border-zinc-200 text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50"
                 >
                   <ArrowUpRight className="w-3.5 h-3.5" />
@@ -1517,7 +1625,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                     isDragging360Ref.current = false;
                   }}
                 >
-                  {/* Simulated Seamless 360 Panorama Strip — Demo: Văn Miếu - Quốc Tử Giám */}
+                  {/* Dynamic Seamless 360 Panorama Strip for Selected Heritage Site */}
                   <div
                     className="absolute inset-0 flex w-[300%] h-full transition-transform duration-75"
                     style={{
@@ -1531,32 +1639,33 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                     }}
                   >
                     <img
-                      src={HERITAGE_IMAGES.vanMieu360Panorama}
-                      alt="Toàn cảnh 360° Văn Miếu - Quốc Tử Giám (Khuê Văn Các & Thiên Quang Tỉnh)"
+                      src={selectedSite.panoramaUrl || HERITAGE_IMAGES.vanMieu360Panorama}
+                      alt={`Toàn cảnh 360° ${selectedSite.site_name} (Góc nhìn chính)`}
                       referrerPolicy="no-referrer"
                       className="w-1/3 h-full object-cover"
                     />
                     <img
-                      src={HERITAGE_IMAGES.vanMieu360Panorama}
-                      alt="Toàn cảnh 360° Văn Miếu - Quốc Tử Giám (Góc nhìn đối xứng)"
+                      src={selectedSite.panoramaUrl || HERITAGE_IMAGES.vanMieu360Panorama}
+                      alt={`Toàn cảnh 360° ${selectedSite.site_name} (Góc mở rộng)`}
                       referrerPolicy="no-referrer"
                       className="w-1/3 h-full object-cover scale-x-[-1]"
                     />
                     <img
-                      src={HERITAGE_IMAGES.vanMieu360Panorama}
-                      alt="Toàn cảnh 360° Văn Miếu - Quốc Tử Giám (Vườn Bia Tiến Sĩ)"
+                      src={selectedSite.panoramaUrl || HERITAGE_IMAGES.vanMieu360Panorama}
+                      alt={`Toàn cảnh 360° ${selectedSite.site_name} (Góc bao quát)`}
                       referrerPolicy="no-referrer"
                       className="w-1/3 h-full object-cover"
                     />
                   </div>
 
-                  {/* Interactive 360° Hotspots for Văn Miếu - Quốc Tử Giám Demo */}
+                  {/* Dynamic Interactive 360° Hotspots for Selected Heritage Site */}
                   <div className="absolute top-14 left-3 z-20 flex flex-wrap items-center gap-1.5">
-                    {[
-                      { label: '🏯 Khuê Văn Các', yaw: 180 },
-                      { label: '🌊 Giếng Thiên Quang', yaw: 140 },
-                      { label: '🐢 Vườn Bia Tiến Sĩ', yaw: 95 },
-                    ].map((spot) => (
+                    {(
+                      selectedSite.hotspots360 || [
+                        { label: `🏯 ${selectedSite.site_name}`, yaw: 180 },
+                        { label: '🌿 Khuôn viên di tích', yaw: 120 },
+                      ]
+                    ).map((spot) => (
                       <button
                         key={spot.label}
                         type="button"
@@ -1605,7 +1714,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                         }`}
                       >
                         <Sun className="w-3 h-3" />
-                        <span>Giờ Vàng 15:30–17:00</span>
+                        <span>{isEn ? 'Golden Hour 15:30–17:00' : 'Giờ Vàng 15:30–17:00'}</span>
                       </button>
                       <button
                         type="button"
@@ -1616,7 +1725,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                             : 'text-zinc-300 hover:text-white'
                         }`}
                       >
-                        Nắng Sớm
+                        {isEn ? 'Morning' : 'Nắng Sớm'}
                       </button>
                       <button
                         type="button"
@@ -1627,7 +1736,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                             : 'text-zinc-300 hover:text-white'
                         }`}
                       >
-                        Đêm Hội
+                        {isEn ? 'Festival Night' : 'Đêm Hội'}
                       </button>
                     </div>
                   </div>
@@ -1641,7 +1750,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                       <div className="px-2.5 py-0.5 rounded-full bg-zinc-950/90 text-amber-300 border border-amber-400/40 text-[10px] font-bold mb-0.5 shadow-md whitespace-nowrap flex items-center gap-1">
                         <Cuboid className="w-3 h-3 text-amber-400" />
                         <span>
-                          Mô hình 3D · {OUTFIT_LABELS[selectedSite.primary_outfit]} ({currentHeightCm}cm)
+                          {isEn ? '3D Model' : 'Mô hình 3D'} · {OUTFIT_LABELS[selectedSite.primary_outfit]} ({currentHeightCm}cm)
                         </span>
                       </div>
                       <Tour360Avatar3D
@@ -1665,7 +1774,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                         }`}
                       >
                         <RotateCw className={`w-3 h-3 ${isAutoRotate360 ? 'animate-spin' : ''}`} />
-                        <span>{isAutoRotate360 ? 'Đang xoay 360°' : 'Tự xoay'}</span>
+                        <span>{isAutoRotate360 ? (isEn ? 'Rotating 360°' : 'Đang xoay 360°') : (isEn ? 'Auto Rotate' : 'Tự xoay')}</span>
                       </button>
 
                       <button
@@ -1678,7 +1787,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                         }`}
                       >
                         <UserCheck className="w-3 h-3" />
-                        <span>{showAvatarIn360 ? 'Ẩn Avatar' : 'Đặt Avatar'}</span>
+                        <span>{showAvatarIn360 ? (isEn ? 'Hide Avatar' : 'Ẩn Avatar') : (isEn ? 'Place Avatar' : 'Đặt Avatar')}</span>
                       </button>
 
                       {showAvatarIn360 && (
@@ -1688,7 +1797,11 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                           max={80}
                           value={avatarOffsetX}
                           onChange={(e) => setAvatarOffsetX(Number(e.target.value))}
-                          title="Kéo để đổi vị trí đứng của Avatar trong khung cảnh 360°"
+                          title={
+                            isEn
+                              ? 'Drag to change Avatar horizontal position in 360° scene'
+                              : 'Kéo để đổi vị trí đứng của Avatar trong khung cảnh 360°'
+                          }
                           className="w-16 sm:w-20 accent-amber-400 cursor-pointer"
                         />
                       )}
@@ -1705,14 +1818,20 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                           triggerGPSAndAIVerification(fallbackPhoto);
                           setRightTab('CHECKIN');
                           setShareToast(
-                            `📸 Đã Check-in Ảo 360° tại ${selectedSite.site_name} & mở khóa con dấu (+${selectedSite.points_awarded}đ)!`
+                            isEn
+                              ? `📸 360° Virtual Check-in at ${selectedSite.site_name} & unlocked stamp (+${selectedSite.points_awarded} pts)!`
+                              : `📸 Đã Check-in Ảo 360° tại ${selectedSite.site_name} & mở khóa con dấu (+${selectedSite.points_awarded}đ)!`
                           );
                           setTimeout(() => setShareToast(null), 3000);
                         }}
                         className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 text-[10px] font-bold inline-flex items-center gap-1 cursor-pointer"
                       >
                         <Camera className="w-3 h-3" />
-                        <span>Check-in Ảo 360° (+{selectedSite.points_awarded}đ)</span>
+                        <span>
+                          {isEn
+                            ? `360° Virtual Check-in (+${selectedSite.points_awarded} pts)`
+                            : `Check-in Ảo 360° (+${selectedSite.points_awarded}đ)`}
+                        </span>
                       </button>
 
                       <button
@@ -1720,7 +1839,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                         onClick={() => setIsVirtualTour360Open(false)}
                         className="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-[10px] font-semibold cursor-pointer"
                       >
-                        Về Bản đồ
+                        {isEn ? 'Back to Map' : 'Về Bản đồ'}
                       </button>
                     </div>
                   </div>
@@ -1929,7 +2048,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                       className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-[11px] font-semibold"
                     >
                       <Navigation className="w-3 h-3" />
-                      <span>Chỉ đường</span>
+                      <span>{isEn ? 'Directions' : 'Chỉ đường'}</span>
                     </a>
                   </div>
                 </div>
@@ -1951,28 +2070,29 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                         : ev.id.includes('saigon')
                     ) || UPCOMING_HERITAGE_EVENTS[0];
 
-                  const activeFestivalItem = directEvents[0] || fallbackEvent;
+                  const rawFestivalItem = directEvents[0] || fallbackEvent;
+                  const activeFestivalItem = getLocalizedHeritageEvent(rawFestivalItem, isEn);
                   const extraFestivalNews = directNewsFestivals[0];
 
                   return (
                     <div className="px-3.5 py-2.5 bg-amber-50/40 space-y-1.5 text-xs">
                       <div className="flex items-center justify-between gap-2">
                         <span className="text-[11px] font-bold text-amber-900">
-                          Lễ hội tại di tích:
+                          {isEn ? 'Festival at site:' : 'Lễ hội tại di tích:'}
                         </span>
                         <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900">
-                          {extraFestivalNews?.festivalDetails?.lunarDate ||
-                            activeFestivalItem.lunarDate ||
-                            activeFestivalItem.dateLabel}
+                          {activeFestivalItem.lunarDate
+                            ? `${isEn ? 'Lunar: ' : 'Âm lịch: '}${activeFestivalItem.lunarDate}`
+                            : activeFestivalItem.dateLabel}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-semibold text-zinc-900 truncate">
-                            {extraFestivalNews ? extraFestivalNews.title : activeFestivalItem.title}
+                            {activeFestivalItem.title}
                           </p>
                           <p className="text-[11px] text-zinc-600 truncate">
-                            Gợi ý mặc: {activeFestivalItem.dressCode}
+                            {isEn ? 'Recommended attire: ' : 'Gợi ý mặc: '}{activeFestivalItem.dressCode}
                           </p>
                         </div>
                         <button
@@ -1984,7 +2104,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                           }
                           className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-semibold shrink-0 cursor-pointer"
                         >
-                          Thử đồ lễ hội 3D
+                          {isEn ? 'Try Festival 3D' : 'Thử đồ lễ hội 3D'}
                         </button>
                       </div>
                     </div>
@@ -2232,9 +2352,21 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                     </div>
                   )}
 
-                  {/* Bottom Camera Controls Overlay (Shutter + Share) */}
+                  {/* Bottom Camera & Upload Controls Overlay (Upload + Shutter + Share) */}
                   <div className="absolute bottom-4 inset-x-4 flex items-center justify-between">
-                    <div className="w-10" />
+                    {/* Upload Photo Button */}
+                    <label
+                      title="Tải ảnh Việt Phục từ máy để AI thẩm định"
+                      className="w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-xs flex items-center justify-center transition-colors cursor-pointer"
+                    >
+                      <Upload className="w-4 h-4" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleUploadPhotoForCheckIn}
+                      />
+                    </label>
 
                     {/* Circular Camera Shutter Button */}
                     <button
@@ -2259,6 +2391,31 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                       <Share2 className="w-4 h-4" />
                     </button>
                   </div>
+                </div>
+
+                {/* Primary Action Button: Check-in & Get Stamp with Gemini Vision */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (capturedPhotoUrl) {
+                      triggerGPSAndAIVerification(capturedPhotoUrl);
+                    } else {
+                      handleStartCameraOrCapture();
+                    }
+                  }}
+                  disabled={isVerifyingAIAndGPS}
+                  className="w-full py-2.5 px-4 rounded-xl bg-zinc-950 hover:bg-zinc-800 active:scale-98 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  <span>
+                    {isVerifyingAIAndGPS
+                      ? 'Gemini Vision đang thẩm định cổ phục & GPS...'
+                      : 'Check-in & Nhận Dấu (Gemini Vision AI)'}
+                  </span>
+                </button>
+                <div className="flex items-center justify-between text-[10px] text-zinc-500 px-1">
+                  <span>📸 Tải ảnh hoặc chụp ảnh trực tiếp</span>
+                  <span>🛡️ AI duyệt: Trang phục tôn nghiêm & GPS &lt; 500m</span>
                 </div>
               </div>
             ) : (
@@ -2523,19 +2680,22 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div>
               <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700">
-                Sự kiện &amp; Lễ hội sắp tới
+                {isEn ? 'Upcoming Events & Festivals' : 'Sự kiện & Lễ hội sắp tới'}
               </span>
               <h3 className="text-sm font-bold text-zinc-950">
-                Lịch lễ hội &amp; Gợi ý trang phục
+                {isEn ? 'Heritage Calendar & Recommended Attire' : 'Lịch lễ hội & Gợi ý trang phục'}
               </h3>
             </div>
             <span className="text-[11px] text-zinc-500">
-              Chọn sự kiện để xem trên bản đồ hoặc thử mẫu 3D
+              {isEn
+                ? 'Select an event to view on map or try in 3D'
+                : 'Chọn sự kiện để xem trên bản đồ hoặc thử mẫu 3D'}
             </span>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {UPCOMING_HERITAGE_EVENTS.map((ev) => {
+            {UPCOMING_HERITAGE_EVENTS.map((rawEv) => {
+              const ev = getLocalizedHeritageEvent(rawEv, isEn);
               const linkedSite = HERITAGE_MAP_SITES.find((s) => s.id === ev.heritage_id);
               return (
                 <div
@@ -2549,7 +2709,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                       </span>
                       {ev.lunarDate && (
                         <span className="text-[10px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
-                          Âm lịch: {ev.lunarDate}
+                          {isEn ? 'Lunar:' : 'Âm lịch:'} {ev.lunarDate}
                         </span>
                       )}
                     </div>
@@ -2570,7 +2730,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                       className="flex-1 py-1.5 px-2.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white text-[11px] font-semibold inline-flex items-center justify-center gap-1 cursor-pointer"
                     >
                       <Cuboid className="w-3 h-3 text-emerald-400" />
-                      <span>Thử mẫu 3D</span>
+                      <span>{isEn ? 'Try in 3D' : 'Thử mẫu 3D'}</span>
                     </button>
                     {linkedSite && (
                       <button
@@ -2578,7 +2738,7 @@ export const HeritageMapPassportSection: React.FC<HeritageMapPassportSectionProp
                         onClick={() => handleSelectSite(linkedSite)}
                         className="py-1.5 px-2.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 text-zinc-800 text-[11px] font-semibold cursor-pointer"
                       >
-                        Xem bản đồ
+                        {isEn ? 'View Map' : 'Xem bản đồ'}
                       </button>
                     )}
                   </div>

@@ -50,6 +50,8 @@ import {
   computeSuggestedSizeFromMeasurements,
   buildMandatoryAccountProfileJson,
   StudioSelection,
+  getLocalizedHeritageEvent,
+  getLocalizedArticle,
 } from '../data/vietPhucData';
 
 export interface UserAccountProfile {
@@ -65,59 +67,84 @@ export interface AppUISettings {
   density: 'comfortable' | 'compact';
   autoSaveLocal: boolean;
   syncStudioWithMap: boolean;
+  language?: 'vi' | 'en';
 }
 
 export interface EventVoucherItem {
   id: string;
   code: string;
   title: string;
+  title_en?: string;
   description: string;
+  description_en?: string;
   pointsCost: number;
   expiryDate: string;
   redeemedAt?: string;
+  redeemedAt_en?: string;
 }
 
-const HERITAGE_RANK_TIERS = [
+export interface HeritageRankTier {
+  id: string;
+  title: string;
+  title_en: string;
+  minStamps: number;
+  badgeId: string;
+  badgeIcon: string;
+  badgeName: string;
+  badgeName_en: string;
+}
+
+const HERITAGE_RANK_TIERS: HeritageRankTier[] = [
   {
     id: 'tier-1',
     title: 'Thợ Phối Tập Sự',
+    title_en: 'Apprentice Stylist',
     minStamps: 1,
     badgeId: 'BADGE_THANG_LONG_CO_TICH',
     badgeIcon: '🏰',
     badgeName: 'Thăng Long Cổ Tích',
+    badgeName_en: 'Thang Long Ancient Tale',
   },
   {
     id: 'tier-2',
     title: 'Bậc Thầy Hành Trình',
+    title_en: 'Journey Master',
     minStamps: 3,
     badgeId: 'BADGE_CO_DO_PHONG_HOA',
     badgeIcon: '👑',
     badgeName: 'Cố Đô Phong Hoa',
+    badgeName_en: 'Imperial Capital Radiance',
   },
   {
     id: 'tier-3',
     title: 'Sứ Giả Di Sản',
+    title_en: 'Heritage Envoy',
     minStamps: 5,
     badgeId: 'BADGE_HOI_AN_HOAI_CO',
     badgeIcon: '🏮',
     badgeName: 'Hội An Hoài Cổ',
+    badgeName_en: 'Hoi An Nostalgia',
   },
   {
     id: 'tier-4',
     title: 'Đại Sứ Văn Hóa',
+    title_en: 'Cultural Ambassador',
     minStamps: 7,
     badgeId: 'BADGE_DAI_SU_VIET_PHUC',
     badgeIcon: '🐉',
     badgeName: 'Đại Sứ Việt Phục',
+    badgeName_en: 'Vietnamese Attire Ambassador',
   },
-] as const;
+];
 
 const REDEEMABLE_EVENT_VOUCHERS: EventVoucherItem[] = [
   {
     id: 'vch-phukien-10',
     code: 'VP-PHUKIEN10',
     title: 'Giảm 10% thuê phụ kiện Cổ phục',
+    title_en: '10% Off Traditional Accessory Rental',
     description: 'Áp dụng thuê khăn xếp, quạt trầm, guốc mộc tại tiệm đối tác',
+    description_en: 'Valid for renting Khăn Xếp, agarwood fan, Guốc Mộc at partner shops',
     pointsCost: 100,
     expiryDate: '31/12/2026',
   },
@@ -125,7 +152,9 @@ const REDEEMABLE_EVENT_VOUCHERS: EventVoucherItem[] = [
     id: 'vch-sukien-15',
     code: 'VP-SUKIEN15',
     title: 'Giảm 15% thuê Việt phục sự kiện',
+    title_en: '15% Off Event Costume Rental',
     description: 'Áp dụng cho Áo Ngũ Thân, Nhật Bình, Tứ Thân dịp lễ hội',
+    description_en: 'Valid for Áo Ngũ Thân, Áo Nhật Bình, Áo Tứ Thân for festival occasions',
     pointsCost: 150,
     expiryDate: '31/12/2026',
   },
@@ -133,7 +162,9 @@ const REDEEMABLE_EVENT_VOUCHERS: EventVoucherItem[] = [
     id: 'vch-maydo-100k',
     code: 'VP-MAYDO100K',
     title: 'Voucher giảm 100.000đ may đo',
+    title_en: '100,000 VND Tailoring Voucher',
     description: 'Áp dụng khi gửi số đo 3D đặt may tại các nhà may đối tác',
+    description_en: 'Valid when sending 3D measurements for bespoke tailoring at partner ateliers',
     pointsCost: 200,
     expiryDate: '31/12/2026',
   },
@@ -141,7 +172,9 @@ const REDEEMABLE_EVENT_VOUCHERS: EventVoucherItem[] = [
     id: 'vch-workshop-250',
     code: 'VP-WORKSHOP250',
     title: 'Vé ưu tiên Workshop & Lookbook',
+    title_en: 'Priority Pass for Workshop & Lookbook',
     description: 'Tham gia sự kiện văn hóa & trải nghiệm chụp Lookbook cổ phục',
+    description_en: 'Join cultural workshops & heritage lookbook photoshoot experiences',
     pointsCost: 250,
     expiryDate: '31/12/2026',
   },
@@ -152,14 +185,27 @@ const INITIAL_OWNED_VOUCHERS: EventVoucherItem[] = [
     id: 'vch-welcome-10',
     code: 'VP-WELCOME10',
     title: 'Giảm 10% thuê Việt phục tiêu chuẩn',
+    title_en: '10% Off Standard Costume Rental',
     description: 'Quà tặng thành viên mới tại hệ thống đối tác VietAura',
+    description_en: 'New member welcome gift across VietAura partner network',
     pointsCost: 0,
     expiryDate: '31/12/2026',
     redeemedAt: 'Thành viên mới',
+    redeemedAt_en: 'New Member Gift',
   },
 ];
 
 const OWNED_VOUCHERS_STORAGE_KEY = 'viet_phuc_owned_vouchers';
+
+function getLocalizedVoucher(vch: EventVoucherItem, isEn: boolean): EventVoucherItem {
+  if (!isEn) return vch;
+  return {
+    ...vch,
+    title: vch.title_en || vch.title,
+    description: vch.description_en || vch.description,
+    redeemedAt: vch.redeemedAt_en || vch.redeemedAt,
+  };
+}
 
 interface UserAccountMenuProps {
   isLoggedIn: boolean;
@@ -305,6 +351,8 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [menuOpen]);
 
+  const isEn = uiSettings.language === 'en';
+
   const spentPoints = ownedVouchers.reduce((sum, item) => sum + (item.pointsCost || 0), 0);
   const availablePoints = Math.max(0, totalPoints - spentPoints);
 
@@ -313,7 +361,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
     stampsCount >= 7 ? 3 : stampsCount >= 5 ? 2 : stampsCount >= 3 ? 1 : 0;
   const currentTier = HERITAGE_RANK_TIERS[currentTierIndex];
   const nextTier = HERITAGE_RANK_TIERS[currentTierIndex + 1] || null;
-  const rankTitle = currentTier.title;
+  const rankTitle = isEn ? (currentTier.title_en || currentTier.title) : currentTier.title;
 
   const roadmapProgressPercent = Math.min(
     100,
@@ -338,8 +386,10 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
     ...unlockedStamps.map((stamp) => ({
       id: `hist-stamp-${stamp.stamp_id}`,
       category: 'CHECKIN' as const,
-      categoryLabel: 'Check-in di tích',
-      description: `Check-in tại ${stamp.site_name} (${stamp.outfit_worn})`,
+      categoryLabel: isEn ? 'Landmark Check-in' : 'Check-in di tích',
+      description: isEn
+        ? `Check-in at ${stamp.site_name} (${stamp.outfit_worn})`
+        : `Check-in tại ${stamp.site_name} (${stamp.outfit_worn})`,
       points: stamp.points_awarded,
       timestamp: stamp.unlocked_at,
     })),
@@ -352,10 +402,10 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
           : 'CHECKIN';
       const categoryLabel =
         category === 'COMMUNITY'
-          ? 'Đăng bài cộng đồng'
+          ? (isEn ? 'Community Posts' : 'Đăng bài cộng đồng')
           : category === 'RENTAL'
-          ? 'Đơn thuê đồ'
-          : 'Check-in & Sự kiện';
+          ? (isEn ? 'Rentals & Orders' : 'Đơn thuê đồ')
+          : (isEn ? 'Check-in & Events' : 'Check-in & Sự kiện');
       return {
         id: log.id,
         category,
@@ -372,20 +422,20 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
   );
 
   const POINT_SOURCE_FILTER_OPTIONS = [
-    { id: 'ALL' as const, label: 'Tất cả', count: allPointHistoryEntries.length },
+    { id: 'ALL' as const, label: isEn ? 'All' : 'Tất cả', count: allPointHistoryEntries.length },
     {
       id: 'CHECKIN' as const,
-      label: 'Check-in di tích',
+      label: isEn ? 'Landmark Check-in' : 'Check-in di tích',
       count: allPointHistoryEntries.filter((e) => e.category === 'CHECKIN').length,
     },
     {
       id: 'COMMUNITY' as const,
-      label: 'Đăng bài cộng đồng',
+      label: isEn ? 'Community Posts' : 'Đăng bài cộng đồng',
       count: allPointHistoryEntries.filter((e) => e.category === 'COMMUNITY').length,
     },
     {
       id: 'RENTAL' as const,
-      label: 'Đơn thuê đồ',
+      label: isEn ? 'Rentals & Orders' : 'Đơn thuê đồ',
       count: allPointHistoryEntries.filter((e) => e.category === 'RENTAL').length,
     },
   ];
@@ -399,6 +449,11 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
     profileBadges.find((b) => b.is_pinned) ||
     [...profileBadges].reverse().find((b) => b.is_unlocked) ||
     profileBadges[0];
+  const matchedTier = HERITAGE_RANK_TIERS.find((t) => t.badgeId === activePinnedBadge?.badge_id);
+  const activePinnedBadgeName =
+    isEn && matchedTier
+      ? matchedTier.badgeName_en || matchedTier.badgeName
+      : activePinnedBadge?.name || '';
 
   const initials =
     userProfile.name
@@ -411,27 +466,34 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
   const handleRedeemVoucher = (voucher: EventVoucherItem) => {
     const alreadyOwned = ownedVouchers.some((v) => v.id === voucher.id);
     if (alreadyOwned) return;
+    const vchTitle = isEn && voucher.title_en ? voucher.title_en : voucher.title;
     if (availablePoints < voucher.pointsCost) {
-      setVoucherFeedback('Chưa đủ điểm sự kiện để đổi voucher này.');
+      setVoucherFeedback(
+        isEn
+          ? 'Not enough event points to redeem this voucher.'
+          : 'Chưa đủ điểm sự kiện để đổi voucher này.'
+      );
       setTimeout(() => setVoucherFeedback(null), 2200);
       return;
     }
 
     const redeemedItem: EventVoucherItem = {
       ...voucher,
-      redeemedAt: new Date().toLocaleDateString('vi-VN'),
+      redeemedAt: new Date().toLocaleDateString(isEn ? 'en-US' : 'vi-VN'),
     };
     setOwnedVouchers((prev) => [redeemedItem, ...prev]);
     const mutationRes = mutateRedeemVoucherInLocalStorage({
       voucher_code: voucher.code,
       discount_percent: 20,
-      description: voucher.title,
+      description: vchTitle,
       expiry_date: '2026-12-31',
       points_cost: voucher.pointsCost,
     });
     setLocalStorageState(mutationRes.state);
     setLastMutationSummary(mutationRes.mutation.new_value_summary);
-    setVoucherFeedback(`Đã đổi thành công "${voucher.title}"!`);
+    setVoucherFeedback(
+      isEn ? `Successfully redeemed "${vchTitle}"!` : `Đã đổi thành công "${voucher.title}"!`
+    );
     setTimeout(() => setVoucherFeedback(null), 2500);
   };
 
@@ -487,18 +549,22 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
         <button
           type="button"
           onClick={() => setLoginModalOpen(true)}
-          title="Đăng nhập tài khoản"
+          title={isEn ? 'Log in to account' : 'Đăng nhập tài khoản'}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-zinc-950 hover:bg-zinc-800 rounded-lg transition-colors whitespace-nowrap cursor-pointer"
         >
           <LogIn className="w-3.5 h-3.5" />
-          <span>Đăng nhập</span>
+          <span>{isEn ? 'Log In' : 'Đăng nhập'}</span>
         </button>
       ) : (
         /* CASE 2: LOGGED IN -> Show Compact Account Avatar Icon */
         <button
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
-          title={`Tài khoản: ${userProfile.name} (${rankTitle})`}
+          title={
+            isEn
+              ? `Account: ${userProfile.name} (${rankTitle})`
+              : `Tài khoản: ${userProfile.name} (${rankTitle})`
+          }
           aria-expanded={menuOpen}
           className={`relative w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all cursor-pointer border ${
             menuOpen
@@ -514,103 +580,107 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
         </button>
       )}
 
-      {/* ACCOUNT & UI SETTINGS POPOVER (When Logged In & Clicked) */}
+      {/* ACCOUNT & UI SETTINGS POPOVER (Apple iOS Sheet / Popover Style) */}
       {isLoggedIn && menuOpen && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 rounded-2xl bg-white border border-zinc-200 shadow-xl z-50 overflow-hidden text-xs">
-          {/* Top Account Header */}
-          <div className="p-3.5 bg-zinc-50 border-b border-zinc-200/80 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-full bg-zinc-950 text-white flex items-center justify-center text-xs font-bold shrink-0">
+        <div className="absolute right-0 mt-2 w-84 sm:w-[420px] rounded-3xl bg-[#FAF8F5]/98 backdrop-blur-2xl border border-[#E8E2D6] shadow-2xl z-50 overflow-hidden text-xs animate-in fade-in zoom-in-95 duration-200">
+          {/* Top Account Header (Apple Inset Card) */}
+          <div className="p-3.5 bg-white/70 border-b border-[#E8E2D6]/80 flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#9A3412] to-[#7C2D12] text-white flex items-center justify-center text-xs font-bold shadow-sm shrink-0 ring-2 ring-white">
                 {initials}
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="font-bold text-zinc-950 truncate text-sm">{userProfile.name}</p>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="font-bold text-stone-900 truncate text-sm">{userProfile.name}</p>
                   {activePinnedBadge && (
                     <span
-                      title={`Huy hiệu đính Profile: ${activePinnedBadge.name}`}
-                      className="px-1.5 py-0.5 rounded bg-zinc-200/80 text-zinc-800 text-[10px] font-semibold shrink-0"
+                      title={
+                        isEn
+                          ? `Pinned Profile Badge: ${activePinnedBadgeName}`
+                          : `Huy hiệu đính Profile: ${activePinnedBadge.name}`
+                      }
+                      className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-900 border border-amber-500/20 text-[10px] font-semibold shrink-0"
                     >
-                      {activePinnedBadge.icon} {activePinnedBadge.name}
+                      {activePinnedBadge.icon} {activePinnedBadgeName}
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                <p className="text-[11px] text-stone-500 truncate mt-0.5">
                   {userProfile.handle} ·{' '}
-                  <span className="text-zinc-900 font-semibold">{rankTitle}</span>
+                  <span className="text-[#9A3412] font-semibold">{rankTitle}</span>
                 </p>
               </div>
             </div>
             <button
               type="button"
               onClick={() => setMenuOpen(false)}
-              className="p-1 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-200/60 cursor-pointer"
+              className="p-1.5 rounded-full text-stone-400 hover:text-stone-900 hover:bg-stone-200/60 active:scale-95 transition-transform cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          {/* 5-Tab Switcher: Tài khoản | Đã lưu (3 sub-tabs) | Voucher | Giao diện | Cài đặt */}
-          <div className="grid grid-cols-5 gap-1 p-1.5 bg-zinc-100 border-b border-zinc-200/70 text-[11px]">
+          {/* Apple Segmented Control 5-Tab Switcher: Hồ sơ | Đã lưu | Voucher | Giao diện | Cài đặt */}
+          <div className="p-1.5 mx-3 my-2 bg-stone-200/60 rounded-2xl grid grid-cols-5 gap-1 text-[11px]">
             <button
               type="button"
               onClick={() => setActiveTab('profile')}
-              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-xl font-semibold transition-all duration-150 cursor-pointer ${
                 activeTab === 'profile'
-                  ? 'bg-white text-zinc-950 shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-950'
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
               <User className="w-3 h-3" />
-              <span>Hồ sơ</span>
+              <span>{isEn ? 'Profile' : 'Hồ sơ'}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('saved')}
-              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-xl font-semibold transition-all duration-150 cursor-pointer ${
                 activeTab === 'saved'
-                  ? 'bg-white text-zinc-950 shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-950'
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
               <Bookmark className="w-3 h-3" />
-              <span>Đã lưu</span>
+              <span>{isEn ? 'Saved' : 'Đã lưu'}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('voucher')}
-              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-xl font-semibold transition-all duration-150 cursor-pointer ${
                 activeTab === 'voucher'
-                  ? 'bg-white text-zinc-950 shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-950'
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
               <Ticket className="w-3 h-3" />
-              <span>Voucher</span>
+              <span>{isEn ? 'Vouchers' : 'Voucher'}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('appearance')}
-              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-xl font-semibold transition-all duration-150 cursor-pointer ${
                 activeTab === 'appearance'
-                  ? 'bg-white text-zinc-950 shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-950'
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
               <Palette className="w-3 h-3" />
-              <span>Giao diện</span>
+              <span>{isEn ? 'Appearance' : 'Giao diện'}</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab('settings')}
-              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+              className={`inline-flex items-center justify-center gap-1 py-1.5 rounded-xl font-semibold transition-all duration-150 cursor-pointer ${
                 activeTab === 'settings'
-                  ? 'bg-white text-zinc-950 shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-950'
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-600 hover:text-stone-900'
               }`}
             >
               <Settings className="w-3 h-3" />
-              <span>Cài đặt</span>
+              <span>{isEn ? 'Settings' : 'Cài đặt'}</span>
             </button>
           </div>
 
@@ -619,11 +689,11 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
             <div className="p-4 space-y-3 max-h-[75vh] overflow-y-auto">
               <div className="flex items-center justify-between">
                 <h4 className="text-xs font-bold text-zinc-950">
-                  Bộ sưu tập Đã lưu Trung tâm
+                  {isEn ? 'Central Saved Collection' : 'Bộ sưu tập Đã lưu Trung tâm'}
                 </h4>
                 <span className="text-[10px] text-zinc-500">
-                  Tổng:{' '}
-                  {savedLookbooks.length + savedEventIds.length + savedArticleIds.length} mục
+                  {isEn ? 'Total: ' : 'Tổng: '}
+                  {savedLookbooks.length + savedEventIds.length + savedArticleIds.length} {isEn ? 'items' : 'mục'}
                 </span>
               </div>
 
@@ -638,7 +708,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                       : 'text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
-                  Outfit 3D ({savedLookbooks.length})
+                  {isEn ? '3D Outfits' : 'Outfit 3D'} ({savedLookbooks.length})
                 </button>
                 <button
                   type="button"
@@ -649,7 +719,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                       : 'text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
-                  Sự kiện ({savedEventIds.length})
+                  {isEn ? 'Events' : 'Sự kiện'} ({savedEventIds.length})
                 </button>
                 <button
                   type="button"
@@ -660,7 +730,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                       : 'text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
-                  Bài viết ({savedArticleIds.length})
+                  {isEn ? 'Articles' : 'Bài viết'} ({savedArticleIds.length})
                 </button>
               </div>
 
@@ -669,7 +739,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-0.5">
                   {savedLookbooks.length === 0 ? (
                     <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/70 text-center text-zinc-400">
-                      Chưa có Outfit 3D nào được lưu.
+                      {isEn ? 'No 3D Outfits saved yet.' : 'Chưa có Outfit 3D nào được lưu.'}
                     </div>
                   ) : (
                     savedLookbooks.map((item) => (
@@ -696,14 +766,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                               className="px-2 py-1 rounded-lg bg-zinc-950 text-white text-[10px] font-semibold hover:bg-zinc-800 cursor-pointer inline-flex items-center gap-1"
                             >
                               <Box className="w-3 h-3" />
-                              <span>Mở 3D</span>
+                              <span>{isEn ? 'Open 3D' : 'Mở 3D'}</span>
                             </button>
                           )}
                           {onRemoveSavedLookbook && (
                             <button
                               type="button"
                               onClick={() => onRemoveSavedLookbook(item)}
-                              title="Xóa khỏi bộ sưu tập"
+                              title={isEn ? 'Remove from saved' : 'Xóa khỏi bộ sưu tập'}
                               className="p-1.5 rounded-lg border border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer"
                             >
                               <Trash2 className="w-3 h-3" />
@@ -722,12 +792,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   {UPCOMING_HERITAGE_EVENTS.filter((e) => savedEventIds.includes(e.id)).length ===
                   0 ? (
                     <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/70 text-center text-zinc-400">
-                      Chưa có sự kiện văn hóa nào được lưu.
+                      {isEn ? 'No cultural events saved yet.' : 'Chưa có sự kiện văn hóa nào được lưu.'}
                     </div>
                   ) : (
                     UPCOMING_HERITAGE_EVENTS.filter((e) => savedEventIds.includes(e.id)).map(
-                      (evt) => (
-                        <div
+                      (rawEvt) => {
+                        const evt = getLocalizedHeritageEvent(rawEvt, isEn);
+                        return (
+                          <div
                           key={evt.id}
                           className="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1.5"
                         >
@@ -747,7 +819,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onToggleSaveEvent(evt.id)}
-                                title="Bỏ lưu sự kiện"
+                                title={isEn ? 'Unsave event' : 'Bỏ lưu sự kiện'}
                                 className="p-1 rounded-lg text-zinc-400 hover:text-zinc-900 cursor-pointer"
                               >
                                 <Trash2 className="w-3 h-3" />
@@ -767,13 +839,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                                 }}
                                 className="px-2 py-1 rounded-lg bg-zinc-950 text-white text-[10px] font-semibold hover:bg-zinc-800 cursor-pointer"
                               >
-                                🔮 Thử 3D
+                                🔮 {isEn ? 'Try 3D' : 'Thử 3D'}
                               </button>
                             )}
                           </div>
                         </div>
-                      )
-                    )
+                      );
+                    }
+                  )
                   )}
                 </div>
               )}
@@ -784,57 +857,60 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   {HERITAGE_NEWS_ARTICLES.filter((a) => savedArticleIds.includes(a.id)).length ===
                   0 ? (
                     <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/70 text-center text-zinc-400">
-                      Chưa có bài viết tư liệu nào được lưu.
+                      {isEn ? 'No articles saved yet.' : 'Chưa có bài viết tư liệu nào được lưu.'}
                     </div>
                   ) : (
                     HERITAGE_NEWS_ARTICLES.filter((a) => savedArticleIds.includes(a.id)).map(
-                      (art) => (
-                        <div
-                          key={art.id}
-                          className="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1.5"
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
-                              <p className="text-[11px] font-bold text-zinc-950 leading-snug">
-                                {art.title}
-                              </p>
-                              <p className="text-[10px] text-zinc-500 mt-0.5 flex items-center gap-1">
-                                <BookOpen className="w-3 h-3 shrink-0" />
-                                <span>
-                                  {art.categoryLabel} · {art.locationOrSource}
-                                </span>
-                              </p>
+                      (rawArt) => {
+                        const art = getLocalizedArticle(rawArt, isEn);
+                        return (
+                          <div
+                            key={art.id}
+                            className="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1.5"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <p className="text-[11px] font-bold text-zinc-950 leading-snug">
+                                  {art.title}
+                                </p>
+                                <p className="text-[10px] text-zinc-500 mt-0.5 flex items-center gap-1">
+                                  <BookOpen className="w-3 h-3 shrink-0" />
+                                  <span>
+                                    {art.categoryLabel} · {art.locationOrSource}
+                                  </span>
+                                </p>
+                              </div>
+                              {onToggleSaveArticle && (
+                                <button
+                                  type="button"
+                                  onClick={() => onToggleSaveArticle(art.id)}
+                                  title={isEn ? 'Unsave article' : 'Bỏ lưu bài viết'}
+                                  className="p-1 rounded-lg text-zinc-400 hover:text-zinc-900 cursor-pointer"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
-                            {onToggleSaveArticle && (
-                              <button
-                                type="button"
-                                onClick={() => onToggleSaveArticle(art.id)}
-                                title="Bỏ lưu bài viết"
-                                className="p-1 rounded-lg text-zinc-400 hover:text-zinc-900 cursor-pointer"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            )}
+                            <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60">
+                              <span className="text-[10px] text-zinc-600 truncate">
+                                {art.relatedGarmentName}
+                              </span>
+                              {onApplyOutfitConfigToStudio && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onApplyOutfitConfigToStudio(art.outfitConfig);
+                                    setMenuOpen(false);
+                                  }}
+                                  className="px-2 py-1 rounded-lg bg-zinc-950 text-white text-[10px] font-semibold hover:bg-zinc-800 cursor-pointer"
+                                >
+                                  🔮 {isEn ? 'Try 3D' : 'Thử 3D'}
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between pt-1 border-t border-zinc-200/60">
-                            <span className="text-[10px] text-zinc-600 truncate">
-                              {art.relatedGarmentName}
-                            </span>
-                            {onApplyOutfitConfigToStudio && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  onApplyOutfitConfigToStudio(art.outfitConfig);
-                                  setMenuOpen(false);
-                                }}
-                                className="px-2 py-1 rounded-lg bg-zinc-950 text-white text-[10px] font-semibold hover:bg-zinc-800 cursor-pointer"
-                              >
-                                🔮 Thử 3D
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      )
+                        );
+                      }
                     )
                   )}
                 </div>
@@ -854,16 +930,16 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 >
                   <div className="inline-flex items-center gap-1 text-zinc-500 text-[10px]">
                     <Bookmark className="w-3 h-3 text-zinc-700" />
-                    <span>Đã lưu</span>
+                    <span>{isEn ? 'Saved' : 'Đã lưu'}</span>
                   </div>
                   <p className="text-sm font-bold text-zinc-950 mt-0.5">
-                    {savedLookbooks.length + savedEventIds.length + savedArticleIds.length} mục
+                    {savedLookbooks.length + savedEventIds.length + savedArticleIds.length} {isEn ? 'items' : 'mục'}
                   </p>
                 </button>
                 <div className="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80">
                   <div className="inline-flex items-center gap-1 text-zinc-500 text-[10px]">
                     <Stamp className="w-3 h-3 text-zinc-700" />
-                    <span>Con dấu</span>
+                    <span>{isEn ? 'Stamps' : 'Con dấu'}</span>
                   </div>
                   <p className="text-sm font-bold text-zinc-950 mt-0.5">
                     {stampsCount}/{totalSitesCount}
@@ -876,7 +952,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 >
                   <div className="inline-flex items-center gap-1 text-zinc-500 text-[10px]">
                     <Award className="w-3 h-3 text-zinc-800" />
-                    <span>Điểm Di Sản</span>
+                    <span>{isEn ? 'Heritage Pts' : 'Điểm Di Sản'}</span>
                   </div>
                   <p className="text-sm font-bold text-zinc-950 mt-0.5">{availablePoints}</p>
                 </button>
@@ -891,17 +967,21 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 block">
-                      Danh hiệu Di Sản
+                      {isEn ? 'Heritage Rank' : 'Danh hiệu Di Sản'}
                     </span>
                     <h4 className="text-xs font-bold text-zinc-950 mt-0.5">{rankTitle}</h4>
                   </div>
                   <div className="text-right">
                     <span className="text-xs font-bold font-mono-tabular text-zinc-950">
-                      {stampsCount} / {totalSitesCount} địa danh
+                      {stampsCount} / {totalSitesCount} {isEn ? 'landmarks' : 'địa danh'}
                     </span>
                     <span className="block text-[10px] text-zinc-500">
                       {nextTier
-                        ? `Check-in thêm ${sitesToNextTier} địa danh nhận ${nextTier.badgeIcon} ${nextTier.badgeName}`
+                        ? isEn
+                          ? `Check-in ${sitesToNextTier} more sites to unlock ${nextTier.badgeIcon} ${nextTier.badgeName_en || nextTier.badgeName}`
+                          : `Check-in thêm ${sitesToNextTier} địa danh nhận ${nextTier.badgeIcon} ${nextTier.badgeName}`
+                        : isEn
+                        ? 'All badges unlocked'
                         : 'Đã mở khóa toàn bộ huy hiệu'}
                     </span>
                   </div>
@@ -951,7 +1031,13 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                                   : 'bg-zinc-200/60 text-zinc-400'
                               }`}
                             >
-                              {isPinned ? 'Đang đính' : `${tier.minStamps} địa danh`}
+                              {isPinned
+                                ? isEn
+                                  ? 'Pinned'
+                                  : 'Đang đính'
+                                : isEn
+                                ? `${tier.minStamps} sites`
+                                : `${tier.minStamps} địa danh`}
                             </span>
                           </div>
                           <p
@@ -959,14 +1045,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                               isPinned ? 'text-white' : 'text-zinc-900'
                             }`}
                           >
-                            {tier.badgeName}
+                            {isEn ? tier.badgeName_en || tier.badgeName : tier.badgeName}
                           </p>
                           <p
                             className={`text-[9px] truncate mt-0.5 ${
                               isPinned ? 'text-zinc-300' : 'text-zinc-500'
                             }`}
                           >
-                            {tier.title}
+                            {isEn ? tier.title_en || tier.title : tier.title}
                           </p>
                         </button>
                       );
@@ -981,7 +1067,11 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     onClick={() => setShowRoadmapDetails((prev) => !prev)}
                     className="w-full flex items-center justify-between text-[11px] font-semibold text-zinc-700 hover:text-zinc-950 cursor-pointer"
                   >
-                    <span>Nguồn tích điểm đổi Voucher ({totalPoints} điểm)</span>
+                    <span>
+                      {isEn
+                        ? `Points Sources for Vouchers (${totalPoints} pts)`
+                        : `Nguồn tích điểm đổi Voucher (${totalPoints} điểm)`}
+                    </span>
                     {showRoadmapDetails ? (
                       <ChevronUp className="w-3.5 h-3.5" />
                     ) : (
@@ -997,15 +1087,15 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                           <strong className="text-zinc-900 font-bold">+{stampPoints}</strong>
                         </div>
                         <div className="p-1.5 rounded-lg bg-white border border-zinc-200/70">
-                          <span className="block text-zinc-400">Cộng đồng</span>
+                          <span className="block text-zinc-400">{isEn ? 'Community' : 'Cộng đồng'}</span>
                           <strong className="text-zinc-900 font-bold">+{socialPoints}</strong>
                         </div>
                         <div className="p-1.5 rounded-lg bg-white border border-zinc-200/70">
-                          <span className="block text-zinc-400">Thuê/May</span>
+                          <span className="block text-zinc-400">{isEn ? 'Rent/Tailor' : 'Thuê/May'}</span>
                           <strong className="text-zinc-900 font-bold">+{partnerPoints}</strong>
                         </div>
                         <div className="p-1.5 rounded-lg bg-white border border-zinc-200/70">
-                          <span className="block text-zinc-400">Sự kiện</span>
+                          <span className="block text-zinc-400">{isEn ? 'Events' : 'Sự kiện'}</span>
                           <strong className="text-zinc-900 font-bold">+{eventPoints}</strong>
                         </div>
                       </div>
@@ -1020,10 +1110,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   <Ticket className="w-4 h-4 text-zinc-800 shrink-0" />
                   <div className="min-w-0">
                     <p className="font-semibold text-zinc-900 truncate">
-                      Điểm Di Sản &amp; Voucher ({ownedVouchers.length})
+                      {isEn
+                        ? `Heritage Points & Vouchers (${ownedVouchers.length})`
+                        : `Điểm Di Sản & Voucher (${ownedVouchers.length})`}
                     </p>
                     <p className="text-[11px] text-zinc-500 truncate">
-                      Khả dụng: {availablePoints} điểm · {allPointHistoryEntries.length} giao dịch
+                      {isEn
+                        ? `Available: ${availablePoints} pts · ${allPointHistoryEntries.length} transactions`
+                        : `Khả dụng: ${availablePoints} điểm · ${allPointHistoryEntries.length} giao dịch`}
                     </p>
                   </div>
                 </div>
@@ -1036,7 +1130,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="px-2.5 py-1.5 rounded-lg border border-zinc-200 bg-white hover:bg-zinc-100 text-zinc-900 text-[11px] font-semibold cursor-pointer"
                   >
-                    Lịch sử điểm
+                    {isEn ? 'Points History' : 'Lịch sử điểm'}
                   </button>
                   <button
                     type="button"
@@ -1046,7 +1140,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="px-2.5 py-1.5 rounded-lg bg-zinc-950 text-white text-[11px] font-semibold hover:bg-zinc-800 cursor-pointer"
                   >
-                    Đổi điểm
+                    {isEn ? 'Redeem Points' : 'Đổi điểm'}
                   </button>
                 </div>
               </div>
@@ -1061,14 +1155,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   <div className="flex items-center gap-1.5 min-w-0">
                     <Ruler className="w-3.5 h-3.5 text-zinc-800 shrink-0" />
                     <span className="font-bold text-zinc-950 truncate">
-                      Thống kê Số đo Cá nhân 3D
+                      {isEn ? '3D Anthropometric Measurements' : 'Thống kê Số đo Cá nhân 3D'}
                     </span>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       type="button"
                       onClick={() => setShowAccountJsonSchema((prev) => !prev)}
-                      title="Xem JSON Hồ sơ & Số đo"
+                      title={isEn ? 'View Profile & Measurements JSON' : 'Xem JSON Hồ sơ & Số đo'}
                       className={`p-1 rounded-lg border cursor-pointer ${
                         showAccountJsonSchema
                           ? 'bg-zinc-950 text-white border-zinc-950'
@@ -1088,7 +1182,11 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     >
                       <span>
                         {accountViewMode === 'MINIMAL_VIEW'
-                          ? 'Chi tiết & Chỉnh sửa số đo'
+                          ? isEn
+                            ? 'Detailed Measurements'
+                            : 'Chi tiết & Chỉnh sửa số đo'
+                          : isEn
+                          ? 'Collapse'
                           : 'Thu gọn'}
                       </span>
                       {accountViewMode === 'MINIMAL_VIEW' ? (
@@ -1113,7 +1211,9 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                       </span>
                     </div>
                     <p className="text-[10px] text-zinc-500 mt-0.5">
-                      Độ vừa vặn may đo: {userMeasurements.fit_score_percent}% · Đồng bộ 2 chiều với Studio
+                      {isEn
+                        ? `Tailoring fit score: ${userMeasurements.fit_score_percent}% · Bi-directional Studio sync`
+                        : `Độ vừa vặn may đo: ${userMeasurements.fit_score_percent}% · Đồng bộ 2 chiều với Studio`}
                     </p>
                   </div>
 
@@ -1124,11 +1224,15 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                         setMenuOpen(false);
                         onSendMeasurementsToB2BMessages();
                       }}
-                      title="Đóng gói tham số nhân trắc học gửi cho thợ may"
+                      title={
+                        isEn
+                          ? 'Package anthropometric measurements for tailor'
+                          : 'Đóng gói tham số nhân trắc học gửi cho thợ may'
+                      }
                       className="px-2.5 py-1.5 rounded-lg bg-zinc-950 hover:bg-zinc-800 text-white text-[10px] font-semibold inline-flex items-center gap-1 shrink-0 cursor-pointer"
                     >
                       <Send className="w-3 h-3 text-emerald-400" />
-                      <span>Gửi B2B</span>
+                      <span>{isEn ? 'Send B2B' : 'Gửi B2B'}</span>
                     </button>
                   )}
                 </div>
@@ -1139,16 +1243,16 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     {/* 5 Body Shape Presets */}
                     <div>
                       <span className="block text-[10px] font-semibold text-zinc-500 mb-1">
-                        Dáng người chuẩn (Body Preset):
+                        {isEn ? 'Body Shape Preset:' : 'Dáng người chuẩn (Body Preset):'}
                       </span>
                       <div className="grid grid-cols-5 gap-1">
                         {(
                           [
-                            { id: 'CAN_DOI', label: 'Cân đối' },
-                            { id: 'MANH_MAI', label: 'Mảnh mai' },
-                            { id: 'DAY_DAN', label: 'Đầy đặn' },
-                            { id: 'CAO_RAO', label: 'Cao ráo' },
-                            { id: 'NHO_NHAN', label: 'Nhỏ nhắn' },
+                            { id: 'CAN_DOI', label: isEn ? 'Balanced' : 'Cân đối' },
+                            { id: 'MANH_MAI', label: isEn ? 'Slim' : 'Mảnh mai' },
+                            { id: 'DAY_DAN', label: isEn ? 'Curvy' : 'Đầy đặn' },
+                            { id: 'CAO_RAO', label: isEn ? 'Tall' : 'Cao ráo' },
+                            { id: 'NHO_NHAN', label: isEn ? 'Petite' : 'Nhỏ nhắn' },
                           ] as { id: BodyShapePresetCode; label: string }[]
                         ).map((preset) => (
                           <button
@@ -1234,49 +1338,49 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                       {[
                         {
                           key: 'height_cm' as const,
-                          label: 'Chiều cao',
+                          label: isEn ? 'Height' : 'Chiều cao',
                           min: 145,
                           max: 190,
                           unit: 'cm',
                         },
                         {
                           key: 'weight_kg' as const,
-                          label: 'Cân nặng',
+                          label: isEn ? 'Weight' : 'Cân nặng',
                           min: 40,
                           max: 90,
                           unit: 'kg',
                         },
                         {
                           key: 'chest_cm' as const,
-                          label: 'Vòng 1 (Ngực)',
+                          label: isEn ? 'Bust (Chest)' : 'Vòng 1 (Ngực)',
                           min: 72,
                           max: 110,
                           unit: 'cm',
                         },
                         {
                           key: 'waist_cm' as const,
-                          label: 'Vòng 2 (Eo)',
+                          label: isEn ? 'Waist' : 'Vòng 2 (Eo)',
                           min: 55,
                           max: 95,
                           unit: 'cm',
                         },
                         {
                           key: 'hip_cm' as const,
-                          label: 'Vòng 3 (Hông)',
+                          label: isEn ? 'Hips' : 'Vòng 3 (Hông)',
                           min: 78,
                           max: 112,
                           unit: 'cm',
                         },
                         {
                           key: 'shoulder_width_cm' as const,
-                          label: 'Rộng vai',
+                          label: isEn ? 'Shoulder Width' : 'Rộng vai',
                           min: 33,
                           max: 48,
                           unit: 'cm',
                         },
                         {
                           key: 'sleeve_length_cm' as const,
-                          label: 'Dài tay áo',
+                          label: isEn ? 'Sleeve Length' : 'Dài tay áo',
                           min: 46,
                           max: 64,
                           unit: 'cm',
@@ -1318,7 +1422,9 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
 
                       {/* Visual Anthropometric Proportion Bars */}
                       <div className="p-2 rounded-lg bg-white border border-zinc-200/80 flex flex-col justify-between">
-                        <span className="text-zinc-500 font-medium">Biểu đồ tỷ lệ 3 vòng</span>
+                        <span className="text-zinc-500 font-medium">
+                          {isEn ? 'Bust-Waist-Hips Proportion Chart' : 'Biểu đồ tỷ lệ 3 vòng'}
+                        </span>
                         <div className="space-y-1 mt-1">
                           {[
                             { label: 'V1', val: userMeasurements.chest_cm, max: 110 },
@@ -1351,7 +1457,9 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   <div className="pt-2 border-t border-zinc-200/70 space-y-1.5">
                     <div className="flex items-center justify-between text-[10px]">
                       <span className="font-bold text-zinc-700">
-                        JSON Schema Hồ sơ &amp; Số đo (GLOBAL_HEADER_USER_ACCOUNT)
+                        {isEn
+                          ? 'JSON Schema Profile & Measurements (GLOBAL_HEADER_USER_ACCOUNT)'
+                          : 'JSON Schema Hồ sơ & Số đo (GLOBAL_HEADER_USER_ACCOUNT)'}
                       </span>
                       <button
                         type="button"
@@ -1396,7 +1504,15 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                         ) : (
                           <Copy className="w-3 h-3" />
                         )}
-                        <span>{copiedAccountJson ? 'Đã chép' : 'Sao chép JSON'}</span>
+                        <span>
+                          {copiedAccountJson
+                            ? isEn
+                              ? 'Copied'
+                              : 'Đã chép'
+                            : isEn
+                            ? 'Copy JSON'
+                            : 'Sao chép JSON'}
+                        </span>
                       </button>
                     </div>
                     <pre className="p-2.5 rounded-xl bg-zinc-950 text-zinc-100 text-[10px] font-mono-tabular overflow-x-auto max-h-48 leading-relaxed">
@@ -1439,7 +1555,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 <form onSubmit={handleSaveProfileEdits} className="space-y-2">
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-600 mb-0.5">
-                      Tên hiển thị
+                      {isEn ? 'Display Name' : 'Tên hiển thị'}
                     </label>
                     <input
                       type="text"
@@ -1450,7 +1566,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-600 mb-0.5">
-                      ID người dùng (Handle)
+                      {isEn ? 'User ID (Handle)' : 'ID người dùng (Handle)'}
                     </label>
                     <input
                       type="text"
@@ -1461,7 +1577,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   </div>
                   <div>
                     <label className="block text-[11px] font-semibold text-zinc-600 mb-0.5">
-                      Email liên kết
+                      {isEn ? 'Linked Email' : 'Email liên kết'}
                     </label>
                     <input
                       type="email"
@@ -1476,33 +1592,35 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                       onClick={() => setIsEditingProfile(false)}
                       className="px-2.5 py-1.5 rounded-lg border border-zinc-200 text-zinc-600 font-semibold cursor-pointer"
                     >
-                      Hủy
+                      {isEn ? 'Cancel' : 'Hủy'}
                     </button>
                     <button
                       type="submit"
                       className="px-3 py-1.5 rounded-lg bg-zinc-950 text-white font-semibold inline-flex items-center gap-1 cursor-pointer"
                     >
                       <Check className="w-3 h-3" />
-                      <span>Lưu</span>
+                      <span>{isEn ? 'Save' : 'Lưu'}</span>
                     </button>
                   </div>
                 </form>
               ) : (
                 <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="font-semibold text-zinc-700">Thông tin cá nhân</span>
+                    <span className="font-semibold text-zinc-700">
+                      {isEn ? 'Personal Information' : 'Thông tin cá nhân'}
+                    </span>
                     <button
                       type="button"
                       onClick={() => setIsEditingProfile(true)}
                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-900 hover:underline cursor-pointer"
                     >
                       <Edit3 className="w-3 h-3" />
-                      <span>Chỉnh sửa</span>
+                      <span>{isEn ? 'Edit' : 'Chỉnh sửa'}</span>
                     </button>
                   </div>
                   <div className="space-y-1 text-[11px] text-zinc-600">
                     <p>
-                      <span className="text-zinc-400">Họ tên:</span>{' '}
+                      <span className="text-zinc-400">{isEn ? 'Full name:' : 'Họ tên:'}</span>{' '}
                       <strong className="text-zinc-900">{userProfile.name}</strong>
                     </p>
                     <p>
@@ -1514,7 +1632,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   {/* Preferred Studio Model Gender */}
                   <div className="pt-2 border-t border-zinc-200/70 flex items-center justify-between">
                     <span className="text-[11px] font-medium text-zinc-600">
-                      Mô hình thử đồ mặc định:
+                      {isEn ? 'Default Virtual Model:' : 'Mô hình thử đồ mặc định:'}
                     </span>
                     <div className="inline-flex p-0.5 rounded-lg bg-zinc-200/70">
                       <button
@@ -1528,7 +1646,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                             : 'text-zinc-600'
                         }`}
                       >
-                        Nữ
+                        {isEn ? 'Female' : 'Nữ'}
                       </button>
                       <button
                         type="button"
@@ -1541,7 +1659,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                             : 'text-zinc-600'
                         }`}
                       >
-                        Nam
+                        {isEn ? 'Male' : 'Nam'}
                       </button>
                     </div>
                   </div>
@@ -1558,7 +1676,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 className="w-full py-2 px-3 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-700 font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>Đăng xuất tài khoản</span>
+                <span>{isEn ? 'Log Out' : 'Đăng xuất tài khoản'}</span>
               </button>
             </div>
           )}
@@ -1571,15 +1689,19 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 <div>
                   <div className="flex items-center gap-1.5">
                     <Award className="w-4 h-4 text-zinc-800" />
-                    <span className="font-semibold text-zinc-700">Điểm Di Sản khả dụng</span>
+                    <span className="font-semibold text-zinc-700">
+                      {isEn ? 'Available Heritage Points' : 'Điểm Di Sản khả dụng'}
+                    </span>
                   </div>
                   <p className="text-[10px] text-zinc-500 mt-0.5">
-                    Tổng tích lũy: {totalPoints}đ · Đã đổi: {spentPoints}đ
+                    {isEn
+                      ? `Total earned: ${totalPoints} pts · Spent: ${spentPoints} pts`
+                      : `Tổng tích lũy: ${totalPoints}đ · Đã đổi: ${spentPoints}đ`}
                   </p>
                 </div>
                 <div className="text-right">
                   <span className="block text-sm font-bold text-zinc-950">
-                    {availablePoints} điểm
+                    {availablePoints} {isEn ? 'pts' : 'điểm'}
                   </span>
                   <button
                     type="button"
@@ -1589,7 +1711,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="text-[10px] font-semibold text-zinc-900 underline hover:text-zinc-600 cursor-pointer"
                   >
-                    Mở trang chi tiết ↗
+                    {isEn ? 'Open details ↗' : 'Mở trang chi tiết ↗'}
                   </button>
                 </div>
               </div>
@@ -1605,7 +1727,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                       : 'text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
-                  Lịch sử ({allPointHistoryEntries.length})
+                  {isEn ? 'History' : 'Lịch sử'} ({allPointHistoryEntries.length})
                 </button>
                 <button
                   type="button"
@@ -1616,7 +1738,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                       : 'text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
-                  Đổi điểm ({REDEEMABLE_EVENT_VOUCHERS.length})
+                  {isEn ? 'Redeem' : 'Đổi điểm'} ({REDEEMABLE_EVENT_VOUCHERS.length})
                 </button>
                 <button
                   type="button"
@@ -1627,7 +1749,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                       : 'text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
-                  Đang có ({ownedVouchers.length})
+                  {isEn ? 'My Vouchers' : 'Đang có'} ({ownedVouchers.length})
                 </button>
               </div>
 
@@ -1666,7 +1788,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   <div className="space-y-1.5 max-h-60 overflow-y-auto pr-0.5">
                     {filteredPointHistory.length === 0 ? (
                       <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/70 text-center text-zinc-400">
-                        Chưa có giao dịch tích điểm nào thuộc nguồn này.
+                        {isEn ? 'No point history in this category.' : 'Chưa có giao dịch tích điểm nào thuộc nguồn này.'}
                       </div>
                     ) : (
                       filteredPointHistory.map((item) => (
@@ -1688,7 +1810,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                             </p>
                           </div>
                           <span className="text-xs font-bold font-mono-tabular text-zinc-950 shrink-0">
-                            +{item.points}đ
+                            +{item.points}{isEn ? ' pts' : 'đ'}
                           </span>
                         </div>
                       ))
@@ -1700,7 +1822,8 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
               {/* SUB-TAB 1: ĐỔI ĐIỂM DI SẢN LẤY VOUCHER */}
               {voucherSubTab === 'redeem' && (
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-0.5">
-                  {REDEEMABLE_EVENT_VOUCHERS.map((vch) => {
+                  {REDEEMABLE_EVENT_VOUCHERS.map((rawVch) => {
+                    const vch = getLocalizedVoucher(rawVch, isEn);
                     const isOwned = ownedVouchers.some((v) => v.id === vch.id);
                     const canAfford = availablePoints >= vch.pointsCost;
 
@@ -1715,12 +1838,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                             <p className="text-[11px] text-zinc-500 mt-0.5">{vch.description}</p>
                           </div>
                           <span className="px-2 py-0.5 rounded-md bg-zinc-200/80 text-zinc-900 font-bold text-[10px] whitespace-nowrap shrink-0">
-                            {vch.pointsCost} điểm
+                            {vch.pointsCost} {isEn ? 'pts' : 'điểm'}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-zinc-200/60">
-                          <span className="text-[10px] text-zinc-400">HSD: {vch.expiryDate}</span>
+                          <span className="text-[10px] text-zinc-400">
+                            {isEn ? 'Exp:' : 'HSD:'} {vch.expiryDate}
+                          </span>
                           <button
                             type="button"
                             disabled={isOwned || !canAfford}
@@ -1733,7 +1858,17 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                                 : 'bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed'
                             }`}
                           >
-                            {isOwned ? 'Đã đổi' : canAfford ? 'Đổi voucher' : 'Chưa đủ điểm'}
+                            {isOwned
+                              ? isEn
+                                ? 'Redeemed'
+                                : 'Đã đổi'
+                              : canAfford
+                              ? isEn
+                                ? 'Redeem Voucher'
+                                : 'Đổi voucher'
+                              : isEn
+                              ? 'Not enough points'
+                              : 'Chưa đủ điểm'}
                           </button>
                         </div>
                       </div>
@@ -1747,48 +1882,51 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-0.5">
                   {ownedVouchers.length === 0 ? (
                     <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200/70 text-center text-zinc-400">
-                      Chưa có voucher nào.
+                      {isEn ? 'No vouchers owned yet.' : 'Chưa có voucher nào.'}
                     </div>
                   ) : (
-                    ownedVouchers.map((vch) => (
-                      <div
-                        key={vch.id}
-                        className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-2"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="font-bold text-zinc-950 leading-snug">{vch.title}</p>
-                            <p className="text-[11px] text-zinc-500 mt-0.5">{vch.description}</p>
+                    ownedVouchers.map((rawVch) => {
+                      const vch = getLocalizedVoucher(rawVch, isEn);
+                      return (
+                        <div
+                          key={vch.id}
+                          className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-2"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <p className="font-bold text-zinc-950 leading-snug">{vch.title}</p>
+                              <p className="text-[11px] text-zinc-500 mt-0.5">{vch.description}</p>
+                            </div>
+                            <span className="text-[10px] text-zinc-400 whitespace-nowrap shrink-0">
+                              {isEn ? 'Exp:' : 'HSD:'} {vch.expiryDate}
+                            </span>
                           </div>
-                          <span className="text-[10px] text-zinc-400 whitespace-nowrap shrink-0">
-                            HSD: {vch.expiryDate}
-                          </span>
-                        </div>
 
-                        <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-zinc-200/60">
-                          <code className="px-2 py-0.5 rounded bg-white border border-zinc-200 text-[11px] font-mono font-bold text-zinc-900">
-                            {vch.code}
-                          </code>
-                          <button
-                            type="button"
-                            onClick={() => handleCopyVoucherCode(vch.code)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-950 text-white text-[11px] font-semibold hover:bg-zinc-800 cursor-pointer"
-                          >
-                            {copiedCode === vch.code ? (
-                              <>
-                                <Check className="w-3 h-3 text-emerald-400" />
-                                <span>Đã chép</span>
-                              </>
-                            ) : (
-                              <>
-                                <Copy className="w-3 h-3" />
-                                <span>Sao chép mã</span>
-                              </>
-                            )}
-                          </button>
+                          <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-zinc-200/60">
+                            <code className="px-2 py-0.5 rounded bg-white border border-zinc-200 text-[11px] font-mono font-bold text-zinc-900">
+                              {vch.code}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyVoucherCode(vch.code)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-950 text-white text-[11px] font-semibold hover:bg-zinc-800 cursor-pointer"
+                            >
+                              {copiedCode === vch.code ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  <span>{isEn ? 'Copied' : 'Đã chép'}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>{isEn ? 'Copy code' : 'Sao chép mã'}</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               )}
@@ -1801,7 +1939,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
               {/* Surface / Color Theme */}
               <div className="space-y-1.5">
                 <label className="block font-semibold text-zinc-700">
-                  1. Tông màu giao diện (Theme)
+                  {isEn ? '1. Color Theme' : '1. Tông màu giao diện (Theme)'}
                 </label>
                 <div className="grid grid-cols-3 gap-1.5">
                   <button
@@ -1814,7 +1952,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }`}
                   >
                     <Sun className="w-4 h-4" />
-                    <span className="text-[11px]">Sáng chuẩn</span>
+                    <span className="text-[11px]">{isEn ? 'Clean Light' : 'Sáng chuẩn'}</span>
                   </button>
 
                   <button
@@ -1827,7 +1965,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }`}
                   >
                     <ScrollText className="w-4 h-4" />
-                    <span className="text-[11px]">Giấy Dó ấm</span>
+                    <span className="text-[11px]">{isEn ? 'Warm Dó Paper' : 'Giấy Dó ấm'}</span>
                   </button>
 
                   <button
@@ -1840,7 +1978,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }`}
                   >
                     <Moon className="w-4 h-4" />
-                    <span className="text-[11px]">Tối dịu mắt</span>
+                    <span className="text-[11px]">{isEn ? 'Comfort Dark' : 'Tối dịu mắt'}</span>
                   </button>
                 </div>
               </div>
@@ -1848,14 +1986,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
               {/* Font Scale */}
               <div className="space-y-1.5">
                 <label className="block font-semibold text-zinc-700">
-                  2. Cỡ chữ hiển thị (Text Size)
+                  {isEn ? '2. Display Text Size' : '2. Cỡ chữ hiển thị (Text Size)'}
                 </label>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(
                     [
-                      { id: 'sm', label: 'Nhỏ gọn' },
-                      { id: 'md', label: 'Tiêu chuẩn' },
-                      { id: 'lg', label: 'Lớn dễ đọc' },
+                      { id: 'sm', label: isEn ? 'Compact' : 'Nhỏ gọn' },
+                      { id: 'md', label: isEn ? 'Standard' : 'Tiêu chuẩn' },
+                      { id: 'lg', label: isEn ? 'Large / Legible' : 'Lớn dễ đọc' },
                     ] as const
                   ).map((opt) => (
                     <button
@@ -1877,7 +2015,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
               {/* Layout Density */}
               <div className="space-y-1.5">
                 <label className="block font-semibold text-zinc-700">
-                  3. Khoảng cách bố cục (Layout)
+                  {isEn ? '3. Layout Density' : '3. Khoảng cách bố cục (Layout)'}
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
                   <button
@@ -1891,7 +2029,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                         : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
                     }`}
                   >
-                    Thoáng đãng
+                    {isEn ? 'Comfortable' : 'Thoáng đãng'}
                   </button>
                   <button
                     type="button"
@@ -1902,7 +2040,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                         : 'border-zinc-200 bg-zinc-50 text-zinc-700 hover:bg-zinc-100'
                     }`}
                   >
-                    Thu gọn
+                    {isEn ? 'Compact' : 'Thu gọn'}
                   </button>
                 </div>
               </div>
@@ -1912,31 +2050,100 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
           {/* TAB 4: CÀI ĐẶT HỆ THỐNG (SETTINGS) */}
           {activeTab === 'settings' && (
             <div className="p-4 space-y-3">
-              <label className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 cursor-pointer">
-                <p className="font-semibold text-zinc-900">Tự động lưu Bộ sưu tập &amp; Con dấu</p>
+              {/* Apple-style Language Switcher Card */}
+              <div className="p-3.5 rounded-2xl bg-white/90 border border-[#E8E2D6] space-y-2.5 shadow-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <p className="font-bold text-stone-900 text-xs">
+                      {isEn ? 'Display Language' : 'Ngôn ngữ hiển thị'}
+                    </p>
+                    <p className="text-[10px] text-stone-500">
+                      {isEn
+                        ? 'Switch between Vietnamese & English'
+                        : 'Chuyển đổi giao diện Tiếng Việt & Tiếng Anh'}
+                    </p>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-900 border border-amber-500/20 font-semibold shrink-0">
+                    {isEn ? 'Bilingual' : 'Song ngữ'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-200/60 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => onUpdateUISettings({ ...uiSettings, language: 'vi' })}
+                    className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      (uiSettings.language || 'vi') === 'vi'
+                        ? 'bg-[#9A3412] text-white shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    🇻🇳 Tiếng Việt
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateUISettings({ ...uiSettings, language: 'en' })}
+                    className={`py-1.5 px-3 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      uiSettings.language === 'en'
+                        ? 'bg-[#9A3412] text-white shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900'
+                    }`}
+                  >
+                    🇬🇧 English
+                  </button>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[10px] text-amber-950 leading-relaxed">
+                  <span className="font-bold">
+                    {isEn ? 'Heritage Nomenclature Policy: ' : 'Quy chuẩn danh xưng Cổ phục: '}
+                  </span>
+                  {isEn
+                    ? 'Proper attire names (Áo Ngũ Thân, Áo Nhật Bình, Áo Tứ Thân, Áo Dài, Áo Bà Ba, Khăn Xếp) are strictly preserved as authentic cultural proper nouns.'
+                    : 'Các tên riêng như Áo Ngũ Thân, Áo Nhật Bình, Áo Tứ Thân, Áo Dài, Áo Bà Ba, Khăn Xếp được giữ nguyên danh pháp di sản đã được kiểm định.'}
+                </div>
+              </div>
+
+              {/* Auto Save Toggle */}
+              <label className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-white/90 border border-[#E8E2D6] cursor-pointer shadow-xs">
+                <div>
+                  <p className="font-semibold text-stone-900 text-xs">
+                    {isEn ? 'Auto-save Collections & Stamps' : 'Tự động lưu Bộ sưu tập & Con dấu'}
+                  </p>
+                  <p className="text-[10px] text-stone-500">
+                    {isEn ? 'Sync lookbooks to browser storage' : 'Đồng bộ lookbook vào bộ nhớ trình duyệt'}
+                  </p>
+                </div>
                 <input
                   type="checkbox"
                   checked={uiSettings.autoSaveLocal}
                   onChange={(e) =>
                     onUpdateUISettings({ ...uiSettings, autoSaveLocal: e.target.checked })
                   }
-                  className="w-4 h-4 accent-zinc-950 rounded cursor-pointer"
+                  className="w-4 h-4 accent-[#9A3412] rounded cursor-pointer"
                 />
               </label>
 
-              <label className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 cursor-pointer">
-                <p className="font-semibold text-zinc-900">Đồng bộ trang phục với Bản đồ</p>
+              {/* Sync Studio with Map Toggle */}
+              <label className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-white/90 border border-[#E8E2D6] cursor-pointer shadow-xs">
+                <div>
+                  <p className="font-semibold text-stone-900 text-xs">
+                    {isEn ? 'Sync Garment with Heritage Map' : 'Đồng bộ trang phục với Bản đồ'}
+                  </p>
+                  <p className="text-[10px] text-stone-500">
+                    {isEn ? 'Auto-suggest appropriate outfit for sites' : 'Gợi ý trang phục tương ứng khi xem di tích'}
+                  </p>
+                </div>
                 <input
                   type="checkbox"
                   checked={uiSettings.syncStudioWithMap}
                   onChange={(e) =>
                     onUpdateUISettings({ ...uiSettings, syncStudioWithMap: e.target.checked })
                   }
-                  className="w-4 h-4 accent-zinc-950 rounded cursor-pointer"
+                  className="w-4 h-4 accent-[#9A3412] rounded cursor-pointer"
                 />
               </label>
 
-              <div className="pt-2 border-t border-zinc-100 space-y-2">
+              <div className="pt-2 border-t border-[#E8E2D6] space-y-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -1944,22 +2151,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     setLocalStorageModalOpen(true);
                     setMenuOpen(false);
                   }}
-                  className="w-full py-2 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-stone-900 hover:bg-stone-800 text-white font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-xs"
                 >
                   <Box className="w-3.5 h-3.5" />
-                  <span>Trình quản lý VIETPHUC_LOCAL_STORAGE_V1</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPitchDeckModalOpen(true);
-                    setMenuOpen(false);
-                  }}
-                  className="w-full py-2 px-3 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-900 font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <ScrollText className="w-3.5 h-3.5" />
-                  <span>Kịch bản Pitch Deck Hackathon (10 Slides)</span>
+                  <span>
+                    {isEn
+                      ? 'Manage VIETPHUC_LOCAL_STORAGE_V1'
+                      : 'Trình quản lý VIETPHUC_LOCAL_STORAGE_V1'}
+                  </span>
                 </button>
 
                 <button
@@ -1976,10 +2175,12 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     onResetAllData();
                     setMenuOpen(false);
                   }}
-                  className="w-full py-2 px-3 rounded-xl border border-zinc-200 bg-white hover:bg-zinc-100 text-zinc-700 font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  className="w-full py-2.5 px-3 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-stone-700 font-semibold inline-flex items-center justify-center gap-1.5 transition-colors cursor-pointer text-xs"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Khôi phục giao diện &amp; dữ liệu mặc định</span>
+                  <span>
+                    {isEn ? 'Restore Factory Defaults' : 'Khôi phục giao diện & dữ liệu mặc định'}
+                  </span>
                 </button>
               </div>
             </div>
@@ -2001,10 +2202,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
             <div className="p-4 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm sm:text-base font-bold text-zinc-950">
-                  Lịch sử tích lũy Điểm Di Sản &amp; Quy đổi Voucher
+                  {isEn
+                    ? 'Heritage Points History & Voucher Redemption'
+                    : 'Lịch sử tích lũy Điểm Di Sản & Quy đổi Voucher'}
                 </h3>
                 <p className="text-[11px] text-zinc-500 mt-0.5">
-                  Theo dõi chi tiết các nguồn tích điểm và đổi ưu đãi dịch vụ Việt phục
+                  {isEn
+                    ? 'Track point accumulation sources and redeem traditional attire service benefits'
+                    : 'Theo dõi chi tiết các nguồn tích điểm và đổi ưu đãi dịch vụ Việt phục'}
                 </p>
               </div>
               <button
@@ -2019,34 +2224,48 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
             {/* Top Summary Metrics Row */}
             <div className="p-4 border-b border-zinc-100 bg-white grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               <div className="p-3 rounded-xl bg-zinc-950 text-white">
-                <span className="text-[10px] text-zinc-400 block">Điểm khả dụng</span>
+                <span className="text-[10px] text-zinc-400 block">
+                  {isEn ? 'Available Points' : 'Điểm khả dụng'}
+                </span>
                 <p className="text-base font-bold font-mono-tabular mt-0.5">
-                  {availablePoints} điểm
+                  {availablePoints} {isEn ? 'pts' : 'điểm'}
                 </p>
                 <span className="text-[10px] text-zinc-400">
-                  Tổng tích lũy: {totalPoints}đ
+                  {isEn ? `Total earned: ${totalPoints} pts` : `Tổng tích lũy: ${totalPoints}đ`}
                 </span>
               </div>
               <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80">
-                <span className="text-[10px] text-zinc-500 block">Check-in di tích</span>
+                <span className="text-[10px] text-zinc-500 block">
+                  {isEn ? 'Landmark Check-in' : 'Check-in di tích'}
+                </span>
                 <p className="text-sm font-bold text-zinc-950 font-mono-tabular mt-0.5">
-                  +{stampPoints + eventPoints} điểm
+                  +{stampPoints + eventPoints} {isEn ? 'pts' : 'điểm'}
                 </p>
-                <span className="text-[10px] text-zinc-400">{stampsCount} địa danh đã đóng dấu</span>
+                <span className="text-[10px] text-zinc-400">
+                  {stampsCount} {isEn ? 'landmarks stamped' : 'địa danh đã đóng dấu'}
+                </span>
               </div>
               <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80">
-                <span className="text-[10px] text-zinc-500 block">Đăng bài cộng đồng</span>
+                <span className="text-[10px] text-zinc-500 block">
+                  {isEn ? 'Community Posts' : 'Đăng bài cộng đồng'}
+                </span>
                 <p className="text-sm font-bold text-zinc-950 font-mono-tabular mt-0.5">
-                  +{socialPoints} điểm
+                  +{socialPoints} {isEn ? 'pts' : 'điểm'}
                 </p>
-                <span className="text-[10px] text-zinc-400">+20 điểm / bài hợp lệ</span>
+                <span className="text-[10px] text-zinc-400">
+                  {isEn ? '+20 pts / verified post' : '+20 điểm / bài hợp lệ'}
+                </span>
               </div>
               <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/80">
-                <span className="text-[10px] text-zinc-500 block">Đơn thuê / may đồ</span>
+                <span className="text-[10px] text-zinc-500 block">
+                  {isEn ? 'Rental / Tailoring Orders' : 'Đơn thuê / may đồ'}
+                </span>
                 <p className="text-sm font-bold text-zinc-950 font-mono-tabular mt-0.5">
-                  +{partnerPoints} điểm
+                  +{partnerPoints} {isEn ? 'pts' : 'điểm'}
                 </p>
-                <span className="text-[10px] text-zinc-400">+10% giá trị đơn hàng</span>
+                <span className="text-[10px] text-zinc-400">
+                  {isEn ? '+10% order value' : '+10% giá trị đơn hàng'}
+                </span>
               </div>
             </div>
 
@@ -2056,7 +2275,9 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
               <div className="lg:col-span-7 space-y-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <h4 className="text-xs font-bold text-zinc-950">
-                    Lịch sử tích lũy Điểm Di Sản ({filteredPointHistory.length})
+                    {isEn
+                      ? `Heritage Points History (${filteredPointHistory.length})`
+                      : `Lịch sử tích lũy Điểm Di Sản (${filteredPointHistory.length})`}
                   </h4>
                   <div className="flex items-center gap-1 overflow-x-auto no-scrollbar">
                     {POINT_SOURCE_FILTER_OPTIONS.map((opt) => {
@@ -2082,7 +2303,9 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                   {filteredPointHistory.length === 0 ? (
                     <div className="p-6 rounded-xl bg-zinc-50 border border-zinc-200/70 text-center text-zinc-400">
-                      Chưa có lịch sử tích điểm nào trong danh mục này.
+                      {isEn
+                        ? 'No point history in this category.'
+                        : 'Chưa có lịch sử tích điểm nào trong danh mục này.'}
                     </div>
                   ) : (
                     filteredPointHistory.map((item) => (
@@ -2104,7 +2327,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                           </p>
                         </div>
                         <span className="px-2.5 py-1 rounded-lg bg-zinc-950 text-white text-xs font-bold font-mono-tabular shrink-0">
-                          +{item.points} điểm
+                          +{item.points} {isEn ? 'pts' : 'điểm'}
                         </span>
                       </div>
                     ))
@@ -2116,10 +2339,12 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
               <div className="lg:col-span-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <h4 className="text-xs font-bold text-zinc-950">
-                    Danh sách Voucher quy đổi ({REDEEMABLE_EVENT_VOUCHERS.length})
+                    {isEn
+                      ? `Redeemable Vouchers (${REDEEMABLE_EVENT_VOUCHERS.length})`
+                      : `Danh sách Voucher quy đổi (${REDEEMABLE_EVENT_VOUCHERS.length})`}
                   </h4>
                   <span className="text-[11px] font-semibold text-zinc-500">
-                    Đang sở hữu: {ownedVouchers.length}
+                    {isEn ? `Owned: ${ownedVouchers.length}` : `Đang sở hữu: ${ownedVouchers.length}`}
                   </span>
                 </div>
 
@@ -2131,7 +2356,8 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 )}
 
                 <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
-                  {REDEEMABLE_EVENT_VOUCHERS.map((vch) => {
+                  {REDEEMABLE_EVENT_VOUCHERS.map((rawVch) => {
+                    const vch = getLocalizedVoucher(rawVch, isEn);
                     const isOwned = ownedVouchers.some((v) => v.id === vch.id);
                     const canAfford = availablePoints >= vch.pointsCost;
 
@@ -2146,12 +2372,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                             <p className="text-[11px] text-zinc-500 mt-0.5">{vch.description}</p>
                           </div>
                           <span className="px-2 py-0.5 rounded-md bg-zinc-200/80 text-zinc-900 font-bold text-[10px] whitespace-nowrap shrink-0">
-                            {vch.pointsCost} điểm
+                            {vch.pointsCost} {isEn ? 'pts' : 'điểm'}
                           </span>
                         </div>
 
                         <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-zinc-200/60">
-                          <span className="text-[10px] text-zinc-400">HSD: {vch.expiryDate}</span>
+                          <span className="text-[10px] text-zinc-400">
+                            {isEn ? 'Exp:' : 'HSD:'} {vch.expiryDate}
+                          </span>
                           <button
                             type="button"
                             disabled={isOwned || !canAfford}
@@ -2164,7 +2392,17 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                                 : 'bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed'
                             }`}
                           >
-                            {isOwned ? 'Đã quy đổi' : canAfford ? 'Quy đổi ngay' : 'Chưa đủ điểm'}
+                            {isOwned
+                              ? isEn
+                                ? 'Redeemed'
+                                : 'Đã quy đổi'
+                              : canAfford
+                              ? isEn
+                                ? 'Redeem Now'
+                                : 'Quy đổi ngay'
+                              : isEn
+                              ? 'Not enough points'
+                              : 'Chưa đủ điểm'}
                           </button>
                         </div>
                       </div>
@@ -2175,29 +2413,32 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                 {/* Owned Vouchers Quick List */}
                 <div className="pt-2 border-t border-zinc-200 space-y-2">
                   <h5 className="text-[11px] font-bold text-zinc-700">
-                    Mã Voucher của bạn ({ownedVouchers.length})
+                    {isEn ? `Your Voucher Codes (${ownedVouchers.length})` : `Mã Voucher của bạn (${ownedVouchers.length})`}
                   </h5>
                   <div className="space-y-1.5 max-h-[130px] overflow-y-auto pr-1">
-                    {ownedVouchers.map((vch) => (
-                      <div
-                        key={vch.id}
-                        className="p-2 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between gap-2"
-                      >
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-bold text-zinc-900 truncate">
-                            {vch.title}
-                          </p>
-                          <code className="text-[10px] font-mono text-zinc-600">{vch.code}</code>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyVoucherCode(vch.code)}
-                          className="px-2 py-1 rounded-lg bg-zinc-950 text-white text-[10px] font-semibold shrink-0 cursor-pointer"
+                    {ownedVouchers.map((rawVch) => {
+                      const vch = getLocalizedVoucher(rawVch, isEn);
+                      return (
+                        <div
+                          key={vch.id}
+                          className="p-2 rounded-xl bg-zinc-50 border border-zinc-200/80 flex items-center justify-between gap-2"
                         >
-                          {copiedCode === vch.code ? 'Đã chép' : 'Sao chép'}
-                        </button>
-                      </div>
-                    ))}
+                          <div className="min-w-0">
+                            <p className="text-[11px] font-bold text-zinc-900 truncate">
+                              {vch.title}
+                            </p>
+                            <code className="text-[10px] font-mono text-zinc-600">{vch.code}</code>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleCopyVoucherCode(vch.code)}
+                            className="px-2 py-1 rounded-lg bg-zinc-950 text-white text-[10px] font-semibold shrink-0 cursor-pointer"
+                          >
+                            {copiedCode === vch.code ? (isEn ? 'Copied' : 'Đã chép') : (isEn ? 'Copy' : 'Sao chép')}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -2212,7 +2453,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
           <div className="w-full max-w-md rounded-2xl bg-white border border-zinc-200 shadow-2xl overflow-hidden text-xs">
             <div className="p-4 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
               <h3 className="text-base font-bold text-zinc-950">
-                Đăng nhập VietAura
+                {isEn ? 'Log in to VietAura' : 'Đăng nhập VietAura'}
               </h3>
               <button
                 type="button"
@@ -2226,35 +2467,35 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
             <form onSubmit={handleLoginSubmit} className="p-5 space-y-3.5">
               <div>
                 <label className="block font-semibold text-zinc-700 mb-1">
-                  Tên hiển thị của bạn
+                  {isEn ? 'Your Display Name' : 'Tên hiển thị của bạn'}
                 </label>
                 <input
                   type="text"
                   required
                   value={loginName}
                   onChange={(e) => setLoginName(e.target.value)}
-                  placeholder="Ví dụ: Nguyễn Minh Châu"
+                  placeholder={isEn ? 'E.g. Minh Chau Nguyen' : 'Ví dụ: Nguyễn Minh Châu'}
                   className="w-full px-3 py-2 rounded-xl border border-zinc-200 text-zinc-900 font-medium focus:outline-none focus:border-zinc-950"
                 />
               </div>
 
               <div>
                 <label className="block font-semibold text-zinc-700 mb-1">
-                  Email tài khoản
+                  {isEn ? 'Account Email' : 'Email tài khoản'}
                 </label>
                 <input
                   type="email"
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder="ban@vietphuc.vn"
+                  placeholder="user@vietphuc.vn"
                   className="w-full px-3 py-2 rounded-xl border border-zinc-200 text-zinc-900 font-medium focus:outline-none focus:border-zinc-950"
                 />
               </div>
 
               <div>
                 <label className="block font-semibold text-zinc-700 mb-1">
-                  Mô hình Phòng thử ưu tiên
+                  {isEn ? 'Preferred Virtual Model' : 'Mô hình Phòng thử ưu tiên'}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -2266,7 +2507,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                         : 'border-zinc-200 bg-zinc-50 text-zinc-700'
                     }`}
                   >
-                    Mẫu Nữ
+                    {isEn ? 'Female Model' : 'Mẫu Nữ'}
                   </button>
                   <button
                     type="button"
@@ -2277,7 +2518,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                         : 'border-zinc-200 bg-zinc-50 text-zinc-700'
                     }`}
                   >
-                    Mẫu Nam
+                    {isEn ? 'Male Model' : 'Mẫu Nam'}
                   </button>
                 </div>
               </div>
@@ -2288,14 +2529,14 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   onClick={() => setLoginModalOpen(false)}
                   className="px-3.5 py-2 rounded-xl border border-zinc-200 text-zinc-600 font-semibold hover:bg-zinc-50 cursor-pointer"
                 >
-                  Để sau
+                  {isEn ? 'Later' : 'Để sau'}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
-                  <span>Đăng nhập ngay</span>
+                  <span>{isEn ? 'Log In Now' : 'Đăng nhập ngay'}</span>
                 </button>
               </div>
             </form>
@@ -2319,7 +2560,9 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                   Local Storage Persistence &amp; Dummy Database ({VIETPHUC_LOCAL_STORAGE_KEY})
                 </h3>
                 <p className="text-[11px] text-zinc-500 mt-0.5">
-                  Quản lý dữ liệu Client-side 100% Offline cho bản Demo Hackathon
+                  {isEn
+                    ? 'Client-side 100% offline data management'
+                    : 'Quản lý dữ liệu Client-side 100% Offline cho bản Demo Hackathon'}
                 </p>
               </div>
               <button
@@ -2336,7 +2579,9 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
               <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200 space-y-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-bold text-zinc-950">
-                    Thao tác Cập nhật Trạng thái Cục bộ (Local Data Mutations)
+                    {isEn
+                      ? 'Local Data Mutations'
+                      : 'Thao tác Cập nhật Trạng thái Cục bộ (Local Data Mutations)'}
                   </span>
                   <span className="text-[11px] text-zinc-600 font-mono">
                     {lastMutationSummary}
@@ -2357,7 +2602,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="py-2 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold cursor-pointer text-center"
                   >
-                    + Lưu Outfit 3D
+                    + {isEn ? 'Save 3D Outfit' : 'Lưu Outfit 3D'}
                   </button>
                   <button
                     type="button"
@@ -2372,7 +2617,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="py-2 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold cursor-pointer text-center"
                   >
-                    + GPS Check-in (+100đ)
+                    + {isEn ? 'GPS Check-in (+100 pts)' : 'GPS Check-in (+100đ)'}
                   </button>
                   <button
                     type="button"
@@ -2389,7 +2634,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="py-2 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold cursor-pointer text-center"
                   >
-                    - Đổi Voucher (-100đ)
+                    - {isEn ? 'Redeem Voucher (-100 pts)' : 'Đổi Voucher (-100đ)'}
                   </button>
                   <button
                     type="button"
@@ -2400,7 +2645,7 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     }}
                     className="py-2 px-3 rounded-xl border border-zinc-300 bg-white hover:bg-zinc-100 text-zinc-800 font-semibold cursor-pointer text-center"
                   >
-                    Reset Seed Mặc định
+                    {isEn ? 'Reset Default Seed' : 'Reset Seed Mặc định'}
                   </button>
                 </div>
               </div>
@@ -2409,7 +2654,9 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-zinc-900">
-                    JSON Schema hiện tại trong localStorage[&quot;{VIETPHUC_LOCAL_STORAGE_KEY}&quot;]
+                    {isEn
+                      ? `Current JSON Schema in localStorage["${VIETPHUC_LOCAL_STORAGE_KEY}"]`
+                      : `JSON Schema hiện tại trong localStorage["${VIETPHUC_LOCAL_STORAGE_KEY}"]`}
                   </span>
                   <button
                     type="button"
@@ -2427,12 +2674,12 @@ export const UserAccountMenu: React.FC<UserAccountMenuProps> = ({
                     {copiedLocalStorageJson ? (
                       <>
                         <Check className="w-3.5 h-3.5 text-emerald-400" />
-                        <span>Đã sao chép JSON</span>
+                        <span>{isEn ? 'Copied JSON' : 'Đã sao chép JSON'}</span>
                       </>
                     ) : (
                       <>
                         <Copy className="w-3.5 h-3.5" />
-                        <span>Sao chép Dummy JSON</span>
+                        <span>{isEn ? 'Copy Dummy JSON' : 'Sao chép Dummy JSON'}</span>
                       </>
                     )}
                   </button>

@@ -18,7 +18,6 @@ import {
   Copy,
   Box,
   Image as ImageIcon,
-  Users,
   Ruler,
   Bot,
   Send,
@@ -36,7 +35,6 @@ import {
   StylingMode,
   UIDisplayMode,
   ActiveSystemTab,
-  GroupStylingMode,
   MandatorySystemJsonOutputSchema,
   UserAnthropometricMeasurements,
   computeSuggestedSizeFromMeasurements,
@@ -74,6 +72,7 @@ import {
 } from '../utils/anatomicalHuman3D';
 import { MiniLookbookDrawer } from './MiniLookbookDrawer';
 import { LookbookStudioModal } from './LookbookStudioModal';
+import { AppLanguage, TRANSLATIONS, getLocalizedGarmentName } from '../utils/i18n';
 
 interface VirtualFittingRoom3DProps {
   selection: StudioSelection;
@@ -89,6 +88,7 @@ interface VirtualFittingRoom3DProps {
   onSendMeasurementsToB2B?: (jsonOutput: MandatorySystemJsonOutputSchema) => void;
   userMeasurements?: UserAnthropometricMeasurements;
   onUpdateMeasurements?: (next: UserAnthropometricMeasurements) => void;
+  language?: AppLanguage;
 }
 
 type ViewportDisplayMode = 'side-by-side' | '2d-only' | '3d-only';
@@ -151,10 +151,15 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
   onSendMeasurementsToB2B,
   userMeasurements,
   onUpdateMeasurements,
+  language = 'vi',
 }) => {
+  const lang = language || 'vi';
+  const tDict = TRANSLATIONS[lang] || TRANSLATIONS.vi;
+  const tStudio = tDict.studio;
+  const tCommon = tDict.common;
+
   const mountRef = useRef<HTMLDivElement | null>(null);
   const [viewportMode, setViewportMode] = useState<ViewportDisplayMode>('side-by-side');
-  const [groupStylingMode, setGroupStylingMode] = useState<GroupStylingMode>('SINGLE');
   const [autoRotate, setAutoRotate] = useState<boolean>(false);
   const [glbLoadedStatus, setGlbLoadedStatus] = useState<'loading' | 'ready' | 'fallback'>(
     'loading'
@@ -309,7 +314,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
   const mandatorySystemJson = buildMandatorySystemJsonOutput({
     selection,
     activeTab: activeSystemTab,
-    groupStylingMode,
+    groupStylingMode: 'SINGLE',
     stylingMode,
     uiDisplayMode,
     primaryHex: primaryGarmentHex,
@@ -706,8 +711,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
       const { avatarGroup, animRefs } = webglContextRef.current;
       clearAndDisposeGroup(avatarGroup);
 
-      sceneStateRef.current.targetZoom =
-        groupStylingMode === 'GROUP' ? 3.85 : groupStylingMode === 'COUPLE' ? 3.45 : 2.95;
+      sceneStateRef.current.targetZoom = 2.95;
 
       const buildSingleAvatarNode = (
         xOffset: number,
@@ -1026,16 +1030,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
         return personNode;
       };
 
-      if (groupStylingMode === 'COUPLE') {
-        avatarGroup.add(buildSingleAvatarNode(-0.28, 0.08, true));
-        avatarGroup.add(buildSingleAvatarNode(0.28, -0.08, false));
-      } else if (groupStylingMode === 'GROUP') {
-        avatarGroup.add(buildSingleAvatarNode(0, 0, true));
-        avatarGroup.add(buildSingleAvatarNode(-0.46, 0.12, false));
-        avatarGroup.add(buildSingleAvatarNode(0.46, -0.12, false));
-      } else {
-        avatarGroup.add(buildSingleAvatarNode(0, 0, true));
-      }
+      avatarGroup.add(buildSingleAvatarNode(0, 0, true));
     };
 
     const cachedScene = GLOBAL_GLTF_CACHE[modelPath];
@@ -1080,7 +1075,6 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
     accentGarmentHex,
     customSecondaryHex,
     customAccentHex,
-    groupStylingMode,
     activeSkinTone.hex,
     effectiveHeightScale,
     shoulderMod,
@@ -1115,6 +1109,28 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
       ...selection,
       accessoryIds: nextAcc,
     });
+  };
+
+  const handleSetCameraAngle = (angle: 'front' | 'threeQuarter' | 'closeup' | 'back') => {
+    if (!webglContextRef.current) return;
+    const { camera } = webglContextRef.current;
+    if (angle === 'front') {
+      sceneStateRef.current.rotationY = 0;
+      sceneStateRef.current.targetZoom = 2.95;
+      camera.position.set(0, 0.96, 2.95);
+    } else if (angle === 'threeQuarter') {
+      sceneStateRef.current.rotationY = 0.58;
+      sceneStateRef.current.targetZoom = 2.95;
+      camera.position.set(0, 0.96, 2.95);
+    } else if (angle === 'closeup') {
+      sceneStateRef.current.rotationY = 0.08;
+      sceneStateRef.current.targetZoom = 2.05;
+      camera.position.set(0, 1.25, 2.05);
+    } else if (angle === 'back') {
+      sceneStateRef.current.rotationY = Math.PI;
+      sceneStateRef.current.targetZoom = 2.95;
+      camera.position.set(0, 0.96, 2.95);
+    }
   };
 
   const handleSaveCurrentLook = () => {
@@ -1167,10 +1183,12 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-5">
           <div>
             <p className="text-xs font-medium text-zinc-500">
-              Đồng bộ thời gian thực Ảnh 2D &amp; Mô hình 3D
+              {lang === 'en'
+                ? 'Realtime Synchronization 2D Portrait & 3D WebGL'
+                : 'Đồng bộ thời gian thực Ảnh 2D & Mô hình 3D'}
             </p>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950 mt-0.5">
-              Phòng thử Việt Phục
+              {lang === 'en' ? 'Vietnamese Heritage Fitting Studio' : 'Phòng thử Việt Phục'}
             </h1>
           </div>
 
@@ -1181,7 +1199,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
               className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl bg-zinc-950 text-white hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               <Bookmark className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Lưu bộ đồ</span>
+              <span>{lang === 'en' ? 'Save Outfit' : 'Lưu bộ đồ'}</span>
             </button>
 
             <button
@@ -1194,7 +1212,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   : 'bg-white text-zinc-800 border-zinc-200 hover:bg-zinc-100'
               }`}
             >
-              <span>Tủ đồ ({savedIds.length})</span>
+              <span>{lang === 'en' ? `Wardrobe (${savedIds.length})` : `Tủ đồ (${savedIds.length})`}</span>
               <ChevronDown
                 className={`w-3.5 h-3.5 transition-transform duration-200 ${
                   collectionDrawerOpen ? 'rotate-180' : ''
@@ -1211,7 +1229,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
               className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold bg-white text-zinc-900 border border-zinc-200 hover:bg-zinc-100 rounded-xl transition-colors cursor-pointer"
             >
               <Share2 className="w-3.5 h-3.5 text-blue-600" />
-              <span>Xuất &amp; So sánh</span>
+              <span>{lang === 'en' ? 'Export & Compare' : 'Xuất & So sánh'}</span>
             </button>
           </div>
         </div>
@@ -1276,80 +1294,48 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   style={{ backgroundColor: primaryGarmentHex }}
                 />
                 <span className="font-semibold text-zinc-100 truncate">
-                  {activeGarment.name.split(' (')[0]} ·{' '}
-                  {groupStylingMode === 'COUPLE'
-                    ? 'Đôi (Nam & Nữ)'
-                    : groupStylingMode === 'GROUP'
-                    ? 'Nhóm (3 Avatar)'
-                    : selection.gender === 'nam'
-                    ? 'Nam'
-                    : 'Nữ'}
+                  {getLocalizedGarmentName(activeGarment.id, lang).split(' (')[0]} ·{' '}
+                  {selection.gender === 'nam' ? tCommon.men : tCommon.women}
                 </span>
               </div>
 
               <div className="flex flex-wrap items-center gap-1.5">
-                {/* Couple & Group 3D Studio Mode Selector (SINGLE | COUPLE | GROUP) */}
-                <div className="inline-flex items-center p-0.5 bg-zinc-900 border border-zinc-800 rounded-lg">
-                  {(
-                    [
-                      { id: 'SINGLE' as const, label: 'Đơn' },
-                      { id: 'COUPLE' as const, label: 'Đôi' },
-                      { id: 'GROUP' as const, label: 'Nhóm' },
-                    ]
-                  ).map((gm) => (
-                    <button
-                      key={gm.id}
-                      type="button"
-                      onClick={() => setGroupStylingMode(gm.id)}
-                      className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] font-medium rounded-md transition-colors cursor-pointer ${
-                        groupStylingMode === gm.id
-                          ? 'bg-amber-400 text-zinc-950 font-bold'
-                          : 'text-zinc-400 hover:text-white'
-                      }`}
-                      title={`Chế độ phối đồ: ${gm.label}`}
-                    >
-                      <Users className="w-3 h-3" />
-                      <span>{gm.label}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="inline-flex items-center p-0.5 bg-zinc-900 border border-zinc-800 rounded-lg">
+                <div className="inline-flex items-center p-1 bg-stone-900/90 backdrop-blur-2xl border border-white/10 rounded-full shadow-lg">
                   <button
                     type="button"
                     onClick={() => setViewportMode('side-by-side')}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold rounded-full transition-all duration-150 cursor-pointer active:scale-95 ${
                       viewportMode === 'side-by-side'
-                        ? 'bg-white text-zinc-950 font-semibold'
-                        : 'text-zinc-400 hover:text-white'
+                        ? 'bg-white text-stone-950 font-bold shadow-xs'
+                        : 'text-stone-300 hover:text-white'
                     }`}
                   >
                     <Columns2 className="w-3 h-3" />
-                    <span>2D &amp; 3D</span>
+                    <span>{tStudio.viewportSideBySide}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setViewportMode('2d-only')}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold rounded-full transition-all duration-150 cursor-pointer active:scale-95 ${
                       viewportMode === '2d-only'
-                        ? 'bg-white text-zinc-950 font-semibold'
-                        : 'text-zinc-400 hover:text-white'
+                        ? 'bg-white text-stone-950 font-bold shadow-xs'
+                        : 'text-stone-300 hover:text-white'
                     }`}
                   >
                     <ImageIcon className="w-3 h-3" />
-                    <span>Ảnh 2D</span>
+                    <span>{tStudio.viewport2DOnly}</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setViewportMode('3d-only')}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-semibold rounded-full transition-all duration-150 cursor-pointer active:scale-95 ${
                       viewportMode === '3d-only'
-                        ? 'bg-white text-zinc-950 font-semibold'
-                        : 'text-zinc-400 hover:text-white'
+                        ? 'bg-white text-stone-950 font-bold shadow-xs'
+                        : 'text-stone-300 hover:text-white'
                     }`}
                   >
                     <Box className="w-3 h-3" />
-                    <span>Mô hình 3D</span>
+                    <span>{tStudio.viewport3DOnly}</span>
                   </button>
                 </div>
 
@@ -1357,14 +1343,14 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   <button
                     type="button"
                     onClick={() => setAutoRotate((prev) => !prev)}
-                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-colors cursor-pointer ${
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-bold rounded-full border transition-all duration-150 cursor-pointer active:scale-95 ${
                       autoRotate
-                        ? 'bg-emerald-500 text-zinc-950 border-emerald-400 font-semibold'
-                        : 'bg-zinc-900 border-zinc-800 text-zinc-300 hover:text-white'
+                        ? 'bg-[#9A3412] text-white border-amber-600/50 shadow-xs'
+                        : 'bg-stone-900/90 border-white/10 text-stone-300 hover:text-white'
                     }`}
                     title="Tự động xoay mô hình 3D"
                   >
-                    <RotateCw className="w-3 h-3" />
+                    <RotateCw className={`w-3 h-3 ${autoRotate ? 'animate-spin' : ''}`} />
                     <span>360°</span>
                   </button>
                 )}
@@ -1379,77 +1365,25 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   : 'grid-cols-1'
               }`}
             >
-              {/* 2D IMAGE PANEL (Supports SINGLE, COUPLE, and GROUP tone-sur-tone portraits) */}
+              {/* 2D IMAGE PANEL */}
               {viewportMode !== '3d-only' && (
                 <div className="w-full h-full flex flex-col items-center justify-center">
                   <div className="relative w-full max-w-[400px] aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl bg-zinc-950 border border-white/10">
-                    {groupStylingMode === 'SINGLE' ? (
-                      <img
-                        key={`${selection.garmentId}-${selection.gender}`}
-                        src={mapped2DImagePath}
-                        alt={`${activeGarment.name} - ${
-                          selection.gender === 'nam' ? 'Nam' : 'Nữ'
-                        }`}
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          const fallback = active2DModelVariant.studioUrl;
-                          if (e.currentTarget.src !== fallback) {
-                            e.currentTarget.src = fallback;
-                          }
-                        }}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : groupStylingMode === 'COUPLE' ? (
-                      <div className="w-full h-full grid grid-cols-2 gap-0.5 bg-zinc-900">
-                        {(['nam', 'nu'] as const).map((gdr) => {
-                          const couplePath = getDynamic2DImagePath(selection.garmentId, gdr);
-                          const coupleFallback = get2DModelImageForSelection(
-                            gdr,
-                            selection.garmentId,
-                            'studio'
-                          ).studioUrl;
-                          return (
-                            <img
-                              key={`couple-${selection.garmentId}-${gdr}`}
-                              src={couplePath}
-                              alt={`${activeGarment.name} - ${gdr}`}
-                              referrerPolicy="no-referrer"
-                              onError={(e) => {
-                                if (e.currentTarget.src !== coupleFallback) {
-                                  e.currentTarget.src = coupleFallback;
-                                }
-                              }}
-                              className="w-full h-full object-cover"
-                            />
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="w-full h-full grid grid-cols-3 gap-0.5 bg-zinc-900">
-                        {(['nu', 'nam', 'nu'] as const).map((gdr, idx) => {
-                          const groupPath = getDynamic2DImagePath(selection.garmentId, gdr);
-                          const groupFallback = get2DModelImageForSelection(
-                            gdr,
-                            selection.garmentId,
-                            'studio'
-                          ).studioUrl;
-                          return (
-                            <img
-                              key={`group-${selection.garmentId}-${gdr}-${idx}`}
-                              src={groupPath}
-                              alt={`${activeGarment.name} - ${gdr}`}
-                              referrerPolicy="no-referrer"
-                              onError={(e) => {
-                                if (e.currentTarget.src !== groupFallback) {
-                                  e.currentTarget.src = groupFallback;
-                                }
-                              }}
-                              className="w-full h-full object-cover"
-                            />
-                          );
-                        })}
-                      </div>
-                    )}
+                    <img
+                      key={`${selection.garmentId}-${selection.gender}`}
+                      src={mapped2DImagePath}
+                      alt={`${activeGarment.name} - ${
+                        selection.gender === 'nam' ? 'Nam' : 'Nữ'
+                      }`}
+                      referrerPolicy="no-referrer"
+                      onError={(e) => {
+                        const fallback = active2DModelVariant.studioUrl;
+                        if (e.currentTarget.src !== fallback) {
+                          e.currentTarget.src = fallback;
+                        }
+                      }}
+                      className="w-full h-full object-cover"
+                    />
                     {/* Subtle Garment-Region Color Sync Overlay when user picks a non-default palette */}
                     {isCustomPaletteSelected && (
                       <div
@@ -1460,11 +1394,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       />
                     )}
                     <div className="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-zinc-950/80 backdrop-blur-md border border-white/10 text-[11px] text-zinc-200 font-medium">
-                      {groupStylingMode === 'COUPLE'
-                        ? 'Ảnh mẫu 2D · Phối Đôi (Nam & Nữ)'
-                        : groupStylingMode === 'GROUP'
-                        ? 'Ảnh mẫu 2D · Phối Nhóm (3 Avatar)'
-                        : 'Ảnh mẫu 2D'}
+                      {tStudio.badge2D}
                     </div>
                   </div>
                 </div>
@@ -1483,16 +1413,52 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                         className="w-full h-full object-cover"
                       />
                     )}
+                    {/* Apple-style 3D Camera Controls Floating Dock */}
+                    <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between pointer-events-none z-10">
+                      <div className="pointer-events-auto px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 text-[10px] text-stone-300 font-medium font-mono-tabular">
+                        3D Rigged WebGL
+                      </div>
+
+                      <div className="pointer-events-auto flex items-center gap-0.5 p-0.5 rounded-full bg-black/60 backdrop-blur-xl border border-white/10 shadow-lg text-[10px] font-semibold text-stone-300">
+                        <button
+                          type="button"
+                          onClick={() => handleSetCameraAngle('front')}
+                          title={lang === 'en' ? 'Front view' : 'Góc nhìn chính diện'}
+                          className="px-2 py-0.5 rounded-full hover:bg-white/20 hover:text-white transition-all cursor-pointer active:scale-95"
+                        >
+                          {tStudio.cameraFront}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSetCameraAngle('threeQuarter')}
+                          title={lang === 'en' ? '3/4 angle view' : 'Góc nhìn nghiêng 3/4'}
+                          className="px-2 py-0.5 rounded-full hover:bg-white/20 hover:text-white transition-all cursor-pointer active:scale-95"
+                        >
+                          {tStudio.camera34}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSetCameraAngle('closeup')}
+                          title={lang === 'en' ? 'Closeup weave & motif' : 'Cận cảnh áo & hoa văn'}
+                          className="px-2 py-0.5 rounded-full hover:bg-white/20 hover:text-white transition-all cursor-pointer active:scale-95"
+                        >
+                          {tStudio.cameraCloseup}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleSetCameraAngle('back')}
+                          title={lang === 'en' ? 'Back view' : 'Nhìn phía sau'}
+                          className="px-2 py-0.5 rounded-full hover:bg-white/20 hover:text-white transition-all cursor-pointer active:scale-95"
+                        >
+                          {tStudio.cameraBack}
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="absolute bottom-2.5 left-2.5 px-2.5 py-1 rounded-lg bg-zinc-950/80 backdrop-blur-md border border-white/10 text-[11px] text-zinc-200 font-medium flex items-center gap-1.5">
-                      <span>
-                        {groupStylingMode === 'COUPLE'
-                          ? '3D Đôi Tone-sur-Tone (Kéo xoay)'
-                          : groupStylingMode === 'GROUP'
-                          ? '3D Nhóm 3 Avatar (Kéo xoay)'
-                          : 'Mô hình 3D (Kéo để xoay)'}
-                      </span>
+                      <span>{tStudio.badge3D}</span>
                       {glbLoadedStatus === 'loading' && (
-                        <span className="text-zinc-400 text-[10px]">(Đang tải...)</span>
+                        <span className="text-zinc-400 text-[10px]">({tStudio.badgeLoading})</span>
                       )}
                     </div>
                   </div>
@@ -1522,7 +1488,9 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                     {/* 4 Context Variables Grid */}
                     <div className="grid grid-cols-2 gap-2 text-[11px]">
                       <div>
-                        <label className="block text-[10px] text-zinc-400 mb-0.5">1. Sự kiện</label>
+                        <label className="block text-[10px] text-zinc-400 mb-0.5">
+                          {lang === 'en' ? '1. Occasion' : '1. Sự kiện'}
+                        </label>
                         <select
                           value={aiEventVar}
                           onChange={(e) =>
@@ -1532,16 +1500,16 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                           }
                           className="w-full px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100"
                         >
-                          <option value="tot-nghiep">Tốt nghiệp / Kỷ yếu</option>
-                          <option value="cuoi-hoi">Cưới hỏi / Lễ nghi</option>
-                          <option value="ngay-tet">Lễ Tết / Chùa chiền</option>
-                          <option value="dao-pho">Dạo phố / Cafe</option>
+                          <option value="tot-nghiep">{lang === 'en' ? 'Graduation / Yearbook' : 'Tốt nghiệp / Kỷ yếu'}</option>
+                          <option value="cuoi-hoi">{lang === 'en' ? 'Wedding / Ceremony' : 'Cưới hỏi / Lễ nghi'}</option>
+                          <option value="ngay-tet">{lang === 'en' ? 'Lunar New Year / Temple' : 'Lễ Tết / Chùa chiền'}</option>
+                          <option value="dao-pho">{lang === 'en' ? 'Strolling / Cafe' : 'Dạo phố / Cafe'}</option>
                         </select>
                       </div>
 
                       <div>
                         <label className="block text-[10px] text-zinc-400 mb-0.5">
-                          2. Thời tiết
+                          {lang === 'en' ? '2. Weather' : '2. Thời tiết'}
                         </label>
                         <select
                           value={aiWeatherVar}
@@ -1556,30 +1524,30 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                           }
                           className="w-full px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100"
                         >
-                          <option value="thu-ha-noi">Thu mát mẻ (22°C)</option>
-                          <option value="xuan-am-ap">Xuân ấm áp (24°C)</option>
-                          <option value="ha-nang-vang">Hạ nắng vàng (32°C)</option>
-                          <option value="dong-se-lanh">Đông se lạnh (16°C)</option>
+                          <option value="thu-ha-noi">{lang === 'en' ? 'Cool Autumn (22°C)' : 'Thu mát mẻ (22°C)'}</option>
+                          <option value="xuan-am-ap">{lang === 'en' ? 'Warm Spring (24°C)' : 'Xuân ấm áp (24°C)'}</option>
+                          <option value="ha-nang-vang">{lang === 'en' ? 'Sunny Summer (32°C)' : 'Hạ nắng vàng (32°C)'}</option>
+                          <option value="dong-se-lanh">{lang === 'en' ? 'Brisk Winter (16°C)' : 'Đông se lạnh (16°C)'}</option>
                         </select>
                       </div>
 
                       <div>
                         <label className="block text-[10px] text-zinc-400 mb-0.5">
-                          3. Phong cách
+                          {lang === 'en' ? '3. Style' : '3. Phong cách'}
                         </label>
                         <select
                           value={aiStyleVar}
                           onChange={(e) => setAiStyleVar(e.target.value as StylingMode)}
                           className="w-full px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100"
                         >
-                          <option value="STRICT_HERITAGE">Cổ Chuẩn (Strict)</option>
-                          <option value="MODERN_FUSION">Tân Thời (Fusion)</option>
+                          <option value="STRICT_HERITAGE">{lang === 'en' ? 'Strict Heritage' : 'Cổ Chuẩn (Strict)'}</option>
+                          <option value="MODERN_FUSION">{lang === 'en' ? 'Modern Fusion' : 'Tân Thời (Fusion)'}</option>
                         </select>
                       </div>
 
                       <div>
                         <label className="block text-[10px] text-zinc-400 mb-0.5">
-                          4. Ngân sách
+                          {lang === 'en' ? '4. Budget' : '4. Ngân sách'}
                         </label>
                         <select
                           value={aiBudgetVar}
@@ -1590,9 +1558,9 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                           }
                           className="w-full px-2 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-zinc-100"
                         >
-                          <option value="sinh-vien">Sinh viên (~220k)</option>
-                          <option value="tieu-chuan">Tiêu chuẩn (~380k)</option>
-                          <option value="may-do">May đo riêng (&gt;1.8tr)</option>
+                          <option value="sinh-vien">{lang === 'en' ? 'Student (~$10)' : 'Sinh viên (~220k)'}</option>
+                          <option value="tieu-chuan">{lang === 'en' ? 'Standard (~$16)' : 'Tiêu chuẩn (~380k)'}</option>
+                          <option value="may-do">{lang === 'en' ? 'Custom Tailoring (>$75)' : 'May đo riêng (>1.8tr)'}</option>
                         </select>
                       </div>
                     </div>
@@ -1600,7 +1568,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                     {/* Realtime AI Output Summary */}
                     <div className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 space-y-1 text-[11px]">
                       <div className="font-bold text-emerald-400">
-                        Đề xuất: {aiRealtimeRecommendation.garmentName}
+                        {lang === 'en' ? 'AI Suggestion:' : 'Đề xuất:'} {aiRealtimeRecommendation.garmentName}
                       </div>
                       <div className="text-zinc-300">{aiRealtimeRecommendation.fabricAdvice}</div>
                       <div className="text-amber-300 font-medium">
@@ -1615,20 +1583,22 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                         className="flex-1 py-2 px-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-[11px] flex items-center justify-center gap-1 cursor-pointer"
                       >
                         <Wand2 className="w-3.5 h-3.5" />
-                        <span>Áp dụng mẫu 3D</span>
+                        <span>{lang === 'en' ? 'Apply to 3D' : 'Áp dụng mẫu 3D'}</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => {
                           setFloatingAiOpen(false);
                           onAskAdvisorWithBodyProfile(
-                            `Mình cần tư vấn Việt phục cho dịp ${aiEventVar}, thời tiết ${aiWeatherVar}, phong cách ${aiStyleVar}, ngân sách ${aiBudgetVar}.`
+                            lang === 'en'
+                              ? `I need advice on traditional Vietnamese costume for ${aiEventVar}, weather: ${aiWeatherVar}, style: ${aiStyleVar}, budget: ${aiBudgetVar}.`
+                              : `Mình cần tư vấn Việt phục cho dịp ${aiEventVar}, thời tiết ${aiWeatherVar}, phong cách ${aiStyleVar}, ngân sách ${aiBudgetVar}.`
                           );
                         }}
                         className="py-2 px-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-semibold text-[11px] cursor-pointer"
-                        title="Mở khung chat AI chuyên sâu"
+                        title={lang === 'en' ? 'Open in-depth AI chat' : 'Mở khung chat AI chuyên sâu'}
                       >
-                        Chat sâu
+                        {lang === 'en' ? 'Deep Chat' : 'Chat sâu'}
                       </button>
                     </div>
                   </div>
@@ -1640,7 +1610,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-bold text-xs shadow-xl border border-emerald-300 transition-transform hover:scale-105 cursor-pointer"
                 >
                   <Bot className="w-4 h-4" />
-                  <span>{floatingAiOpen ? 'Thu gọn' : 'Cố vấn AI'}</span>
+                  <span>{floatingAiOpen ? (lang === 'en' ? 'Collapse' : 'Thu gọn') : (lang === 'en' ? 'AI Advisor' : 'Cố vấn AI')}</span>
                 </button>
               </div>
             </div>
@@ -1651,7 +1621,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
             {/* 1. Gender Selector (selection.gender) */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                1. Người mẫu
+                {lang === 'en' ? '1. Model Gender' : '1. Người mẫu'}
               </label>
               <div className="grid grid-cols-2 gap-2 p-1 bg-zinc-100 rounded-xl">
                 <button
@@ -1673,7 +1643,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       : 'text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
-                  Mẫu Nam (Thành)
+                  {lang === 'en' ? 'Men (Bách)' : 'Mẫu Nam (Thành)'}
                 </button>
                 <button
                   type="button"
@@ -1694,7 +1664,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       : 'text-zinc-600 hover:text-zinc-950'
                   }`}
                 >
-                  Mẫu Nữ (Thắm)
+                  {lang === 'en' ? 'Women (Thắm)' : 'Mẫu Nữ (Thắm)'}
                 </button>
               </div>
             </div>
@@ -1702,7 +1672,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
             {/* 2. Garment Selector (selection.garmentId) */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500 mb-2">
-                2. Dòng cổ phục
+                {lang === 'en' ? '2. Traditional Garment' : '2. Dòng cổ phục'}
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {HERITAGE_GARMENTS.map((rawGarment) => {
@@ -1774,10 +1744,10 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-zinc-900">
-                        Thông tin Trang phục
+                        {lang === 'en' ? 'Garment Anatomy & Culture' : 'Thông tin Trang phục'}
                       </span>
                       <span className="px-1.5 py-0.5 rounded-md bg-zinc-200/80 text-zinc-700 text-[10px] font-semibold truncate">
-                        {activeGarment.name.split(' (')[0]} · {activeGarment.structuralPoints.length} lớp
+                        {getLocalizedGarmentName(activeGarment.id, lang).split(' (')[0]} · {activeGarment.structuralPoints.length} {lang === 'en' ? 'layers' : 'lớp'}
                       </span>
                     </div>
                     {!showGarmentDetails && (
@@ -1787,7 +1757,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                     )}
                   </div>
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-600 shrink-0">
-                    <span>{showGarmentDetails ? 'Thu gọn' : 'Xem thêm'}</span>
+                    <span>{showGarmentDetails ? (lang === 'en' ? 'Collapse' : 'Thu gọn') : (lang === 'en' ? 'View more' : 'Xem thêm')}</span>
                     <ChevronDown
                       className={`w-3.5 h-3.5 transition-transform duration-200 ${
                         showGarmentDetails ? 'rotate-180' : ''
@@ -1809,7 +1779,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                             : 'text-zinc-500 hover:text-zinc-900'
                         }`}
                       >
-                        Ý nghĩa &amp; Dịp mặc
+                        {lang === 'en' ? 'Meaning & Occasions' : 'Ý nghĩa & Dịp mặc'}
                       </button>
                       <button
                         type="button"
@@ -1820,7 +1790,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                             : 'text-zinc-500 hover:text-zinc-900'
                         }`}
                       >
-                        Cấu trúc lớp áo ({activeGarment.structuralPoints.length})
+                        {lang === 'en' ? `Layer Structure (${activeGarment.structuralPoints.length})` : `Cấu trúc lớp áo (${activeGarment.structuralPoints.length})`}
                       </button>
                     </div>
 
@@ -1829,17 +1799,17 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                         <p className="text-zinc-800 font-medium">{activeGarment.subtitle}</p>
                         <div className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-200/60 space-y-1.5">
                           <p>
-                            <strong className="text-zinc-900">Giá trị văn hóa:</strong>{' '}
+                            <strong className="text-zinc-900">{lang === 'en' ? 'Cultural Value:' : 'Giá trị văn hóa:'}</strong>{' '}
                             {activeGarment.meaning}
                           </p>
                           <p>
-                            <strong className="text-zinc-900">Bối cảnh &amp; Dịp mặc:</strong>{' '}
+                            <strong className="text-zinc-900">{lang === 'en' ? 'Context & Occasions:' : 'Bối cảnh & Dịp mặc:'}</strong>{' '}
                             {(activeGarment.occasions || []).join(', ')}
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-1 pt-0.5">
                           <span className="text-[10px] font-bold text-zinc-500 mr-1">
-                            Phụ kiện chuẩn:
+                            {lang === 'en' ? 'Standard Accessories:' : 'Phụ kiện chuẩn:'}
                           </span>
                           {(activeGarment.standardAccessories || []).map((accName) => (
                             <span
@@ -1873,10 +1843,10 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
             <div>
               <div className="flex items-center justify-between gap-2 mb-2.5">
                 <label className="block text-xs font-bold uppercase tracking-wider text-zinc-500">
-                  3. Bảng màu phối
+                  {lang === 'en' ? '3. Color Palette' : '3. Bảng màu phối'}
                 </label>
                 <span className="text-[11px] text-zinc-500 font-medium truncate">
-                  {isCustomPaletteOverride ? 'Màu tự phối' : activePalette.name}
+                  {isCustomPaletteOverride ? (lang === 'en' ? 'Custom Palette' : 'Màu tự phối') : activePalette.name}
                 </span>
               </div>
 
@@ -1914,7 +1884,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       {isDefaultForGarment && (
                         <span
                           className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-white"
-                          title="Màu chuẩn đồng bộ 2D/3D"
+                          title={lang === 'en' ? 'Standard 2D/3D Synced Colors' : 'Màu chuẩn đồng bộ 2D/3D'}
                         />
                       )}
                     </button>
@@ -1958,7 +1928,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       <button
                         type="button"
                         onClick={(e) => handleDeleteCustomPalette(cp.id, e)}
-                        title="Xóa bộ màu này"
+                        title={lang === 'en' ? 'Delete this custom palette' : 'Xóa bộ màu này'}
                         className="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-1 -right-1 w-4 h-4 rounded-full bg-zinc-900 text-white flex items-center justify-center text-[10px] cursor-pointer hover:bg-red-600"
                       >
                         <X className="w-2.5 h-2.5" />
@@ -1971,7 +1941,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowCustomPaletteEditor((prev) => !prev)}
-                  title="Tùy chỉnh bộ màu mới"
+                  title={lang === 'en' ? 'Customize new palette' : 'Tùy chỉnh bộ màu mới'}
                   className={`h-9 px-3 rounded-full border border-dashed text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
                     showCustomPaletteEditor
                       ? 'bg-zinc-950 text-white border-zinc-950'
@@ -1979,7 +1949,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   }`}
                 >
                   <span>+</span>
-                  <span className="text-[11px]">Tùy chỉnh</span>
+                  <span className="text-[11px]">{lang === 'en' ? 'Customize' : 'Tùy chỉnh'}</span>
                 </button>
               </div>
 
@@ -1988,7 +1958,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                 <div className="mt-3 p-3.5 rounded-xl bg-zinc-50 border border-zinc-200/90 space-y-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-700">
-                      Phối 3 lớp màu (Áo · Cổ/Yếm · Đai)
+                      {lang === 'en' ? 'Custom 3 Layers (Outer · Collar · Sash)' : 'Phối 3 lớp màu (Áo · Cổ/Yếm · Đai)'}
                     </span>
                     <div className="flex items-center gap-1.5">
                       {isCustomPaletteOverride && (
@@ -2001,7 +1971,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                           }}
                           className="text-[11px] font-medium text-zinc-500 hover:text-zinc-900 underline cursor-pointer"
                         >
-                          Đặt lại
+                          {lang === 'en' ? 'Reset' : 'Đặt lại'}
                         </button>
                       )}
                       <button
@@ -2009,7 +1979,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                         onClick={handleSaveCustomPaletteToGrid}
                         className="px-2.5 py-1 rounded-lg bg-zinc-950 text-white text-[11px] font-semibold hover:bg-zinc-800 transition-colors cursor-pointer"
                       >
-                        + Lưu màu
+                        {lang === 'en' ? '+ Save Palette' : '+ Lưu màu'}
                       </button>
                     </div>
                   </div>
@@ -2020,19 +1990,19 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       [
                         {
                           slot: 'primary' as const,
-                          label: '1. Áo ngoài',
+                          label: lang === 'en' ? '1. Outer Robe' : '1. Áo ngoài',
                           hex: primaryGarmentHex,
                           onChange: (val: string) => setCustomPrimaryHex(val),
                         },
                         {
                           slot: 'secondary' as const,
-                          label: '2. Cổ / Yếm',
+                          label: lang === 'en' ? '2. Collar / Inner' : '2. Cổ / Yếm',
                           hex: secondaryGarmentHex,
                           onChange: (val: string) => setCustomSecondaryHex(val),
                         },
                         {
                           slot: 'accent' as const,
-                          label: '3. Đai / Viền',
+                          label: lang === 'en' ? '3. Sash / Trim' : '3. Đai / Viền',
                           hex: accentGarmentHex,
                           onChange: (val: string) => setCustomAccentHex(val),
                         },
@@ -2056,7 +2026,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                             <label
                               className="relative w-5 h-5 rounded-full border border-zinc-300 overflow-hidden shrink-0 cursor-pointer shadow-2xs"
                               style={{ backgroundColor: item.hex }}
-                              title="Chọn mã màu bất kỳ"
+                              title={lang === 'en' ? 'Select color code' : 'Chọn mã màu bất kỳ'}
                               onClick={(e) => e.stopPropagation()}
                             >
                               <input
@@ -2081,13 +2051,13 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   {/* Quick Heritage Pigment Swatches for the Active Slot */}
                   <div>
                     <div className="text-[10px] text-zinc-500 mb-1.5">
-                      Chọn nhanh sắc màu truyền thống cho ô{' '}
+                      {lang === 'en' ? 'Quick select traditional pigment for: ' : 'Chọn nhanh sắc màu truyền thống cho ô '}
                       <strong className="text-zinc-800">
                         {activeColorSlot === 'primary'
-                          ? '1. Áo ngoài'
+                          ? (lang === 'en' ? '1. Outer Robe' : '1. Áo ngoài')
                           : activeColorSlot === 'secondary'
-                          ? '2. Cổ / Yếm'
-                          : '3. Đai / Viền'}
+                          ? (lang === 'en' ? '2. Collar / Inner' : '2. Cổ / Yếm')
+                          : (lang === 'en' ? '3. Sash / Trim' : '3. Đai / Viền')}
                       </strong>
                       :
                     </div>
@@ -2153,7 +2123,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                 className="w-full flex items-center justify-between gap-2 text-left cursor-pointer group"
               >
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-600 group-hover:text-zinc-950">
-                  4. Vóc dáng &amp; Số đo 3D
+                  {lang === 'en' ? '4. Body Shape & 3D Specs' : '4. Vóc dáng & Số đo 3D'}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <span className="px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 text-zinc-800 text-[11px] font-semibold">
@@ -2192,7 +2162,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                               isSelected ? 'text-zinc-300' : 'text-zinc-500'
                             }`}
                           >
-                            {bp.defaultHeightCm[selection.gender]}cm · Vai {Math.round(bp.shoulderScale * 100)}%
+                            {bp.defaultHeightCm[selection.gender]}cm · {lang === 'en' ? 'Shoulder' : 'Vai'} {Math.round(bp.shoulderScale * 100)}%
                           </div>
                         </button>
                       );
@@ -2203,15 +2173,15 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   <div className="px-3 py-2 rounded-xl bg-zinc-100/90 border border-zinc-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px] text-zinc-700">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span>
-                        Cao: <strong className="text-zinc-950">{customHeightCm}cm</strong>
+                        {lang === 'en' ? 'Height:' : 'Cao:'} <strong className="text-zinc-950">{customHeightCm}cm</strong>
                       </span>
                       <span>·</span>
                       <span>
-                        Nặng: <strong className="text-zinc-950">~{computedMeasurements.weight_kg}kg</strong>
+                        {lang === 'en' ? 'Weight:' : 'Nặng:'} <strong className="text-zinc-950">~{computedMeasurements.weight_kg}kg</strong>
                       </span>
                       <span>·</span>
                       <span>
-                        3 vòng:{' '}
+                        {lang === 'en' ? 'B-W-H:' : '3 vòng:'}{' '}
                         <strong className="text-zinc-950">
                           {computedMeasurements.chest_cm}-{computedMeasurements.waist_cm}-
                           {computedMeasurements.hip_cm}cm
@@ -2227,7 +2197,9 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       }
                       className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
                     >
-                      {uiDisplayMode === 'ADVANCED_MODE' ? 'Ẩn thanh trượt' : 'Chỉnh chi tiết'}
+                      {uiDisplayMode === 'ADVANCED_MODE' 
+                        ? (lang === 'en' ? 'Hide sliders' : 'Ẩn thanh trượt') 
+                        : (lang === 'en' ? 'Fine-tune sliders' : 'Chỉnh chi tiết')}
                     </button>
                   </div>
 
@@ -2237,7 +2209,9 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       {/* Chiều cao (145 - 190 cm) */}
                       <div>
                         <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="font-medium text-zinc-700">Chiều cao (145–190 cm)</span>
+                          <span className="font-medium text-zinc-700">
+                            {lang === 'en' ? 'Height (145–190 cm)' : 'Chiều cao (145–190 cm)'}
+                          </span>
                           <span className="font-bold text-zinc-950">{customHeightCm} cm</span>
                         </div>
                         <input
@@ -2254,7 +2228,9 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       {/* Độ rộng Vai (shoulderMod) */}
                       <div>
                         <div className="flex items-center justify-between text-[11px] mb-1">
-                          <span className="font-medium text-zinc-700">Độ rộng Vai &amp; Tay áo</span>
+                          <span className="font-medium text-zinc-700">
+                            {lang === 'en' ? 'Shoulder & Sleeve Width' : 'Độ rộng Vai & Tay áo'}
+                          </span>
                           <span className="font-bold text-zinc-950">
                             {Math.round(shoulderMod * 100)}%
                           </span>
@@ -2274,7 +2250,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       <div>
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className="font-medium text-zinc-700">
-                            Khung Ngực &amp; Eo ({computedMeasurements.chest_cm} /{' '}
+                            {lang === 'en' ? 'Chest & Waist Contour' : 'Khung Ngực & Eo'} ({computedMeasurements.chest_cm} /{' '}
                             {computedMeasurements.waist_cm} cm)
                           </span>
                           <span className="font-bold text-zinc-950">
@@ -2296,7 +2272,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       <div>
                         <div className="flex items-center justify-between text-[11px] mb-1">
                           <span className="font-medium text-zinc-700">
-                            Khung Hông &amp; Tà dưới ({computedMeasurements.hip_cm} cm)
+                            {lang === 'en' ? 'Hip & Lower Hem' : 'Khung Hông & Tà dưới'} ({computedMeasurements.hip_cm} cm)
                           </span>
                           <span className="font-bold text-zinc-950">
                             {Math.round(hipMod * 100)}%
@@ -2316,13 +2292,15 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       {/* Tông màu da (Skin Tone) */}
                       <div>
                         <div className="flex items-center justify-between text-[11px] mb-1.5">
-                          <span className="font-medium text-zinc-700">Tông màu da 3D:</span>
+                          <span className="font-medium text-zinc-700">
+                            {lang === 'en' ? '3D Skin Tone:' : 'Tông màu da 3D:'}
+                          </span>
                           <button
                             type="button"
                             onClick={() => handleSelectBodyProfile(bodyProfileId)}
                             className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
                           >
-                            Đặt lại mặc định
+                            {lang === 'en' ? 'Reset Default' : 'Đặt lại mặc định'}
                           </button>
                         </div>
                         <div className="grid grid-cols-3 gap-1.5">
@@ -2360,7 +2338,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       className="w-full py-2 px-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
                       <Ruler className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Gửi số đo đặt may (Size {computedSize})</span>
+                      <span>{lang === 'en' ? `Send Measurements to Tailor (Size ${computedSize})` : `Gửi số đo đặt may (Size ${computedSize})`}</span>
                     </button>
                   )}
                 </div>
@@ -2378,15 +2356,15 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs font-bold text-zinc-900">
-                      Lựa chọn Phụ kiện
+                      {lang === 'en' ? 'Accessories & Lower Garments' : 'Lựa chọn Phụ kiện'}
                     </span>
                     <span className="px-1.5 py-0.5 rounded-md bg-zinc-200/80 text-zinc-700 text-[10px] font-semibold truncate">
-                      {activeLower.label.split(' (')[0]} · {selection.accessoryIds.length} món
+                      {activeLower.label.split(' (')[0]} · {selection.accessoryIds.length} {lang === 'en' ? 'items' : 'món'}
                     </span>
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-600 shrink-0">
-                  <span>{showExtraAccessories ? 'Thu gọn' : 'Tùy chỉnh'}</span>
+                  <span>{showExtraAccessories ? (lang === 'en' ? 'Collapse' : 'Thu gọn') : (lang === 'en' ? 'Customize' : 'Tùy chỉnh')}</span>
                   <ChevronDown
                     className={`w-3.5 h-3.5 transition-transform duration-200 ${
                       showExtraAccessories ? 'rotate-180' : ''
@@ -2400,7 +2378,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <div>
                       <label className="block text-[11px] font-medium text-zinc-500 mb-1">
-                        Quần / Váy đi kèm:
+                        {lang === 'en' ? 'Lower Garment (Pants / Skirt):' : 'Quần / Váy đi kèm:'}
                       </label>
                       <select
                         value={selection.lowerGarmentId}
@@ -2419,7 +2397,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
 
                     <div>
                       <label className="block text-[11px] font-medium text-zinc-500 mb-1">
-                        Hoa văn trên vải:
+                        {lang === 'en' ? 'Fabric Motif / Pattern:' : 'Hoa văn trên vải:'}
                       </label>
                       <select
                         value={selection.motifId}
@@ -2439,7 +2417,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
 
                   <div>
                     <span className="block text-[11px] font-medium text-zinc-500 mb-1.5">
-                      Phụ kiện đội đầu &amp; cầm tay 3D:
+                      {lang === 'en' ? 'Headwear & Handheld 3D Accessories:' : 'Phụ kiện đội đầu & cầm tay 3D:'}
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {ACCESSORY_OPTIONS.map((acc) => {
@@ -2465,7 +2443,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
 
                   <div>
                     <label className="block text-[11px] font-medium text-zinc-500 mb-1">
-                      Giày / Guốc đi kèm:
+                      {lang === 'en' ? 'Footwear / Slippers:' : 'Giày / Guốc đi kèm:'}
                     </label>
                     <select
                       value={selection.footwearId}
@@ -2510,10 +2488,10 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                     }
                   >
                     {hasCriticalViolation
-                      ? '🔴 Lệch quy chuẩn Cổ lệ'
+                      ? (lang === 'en' ? '🔴 Heritage Protocol Violation' : '🔴 Lệch quy chuẩn Cổ lệ')
                       : hasAdvisoryTipOnly
-                      ? '🟠 Lưu ý phối Tân thời'
-                      : '🟢 Chuẩn quy tắc Cổ phục'}
+                      ? (lang === 'en' ? '🟠 Modern Fusion Notice' : '🟠 Lưu ý phối Tân thời')
+                      : (lang === 'en' ? '🟢 Heritage Protocol Compliant' : '🟢 Chuẩn quy tắc Cổ phục')}
                   </span>
                   {!hasViolation && (
                     <ChevronDown
@@ -2534,7 +2512,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                         : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    Cổ Chuẩn
+                    {lang === 'en' ? 'Strict' : 'Cổ Chuẩn'}
                   </button>
                   <button
                     type="button"
@@ -2545,7 +2523,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                         : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    Tân Thời
+                    {lang === 'en' ? 'Fusion' : 'Tân Thời'}
                   </button>
                 </div>
               </div>
@@ -2570,7 +2548,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                     className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[11px] font-semibold cursor-pointer"
                   >
                     <Wand2 className="w-3 h-3" />
-                    <span>Tự động chỉnh chuẩn</span>
+                    <span>{lang === 'en' ? 'Auto Fix to Compliant' : 'Tự động chỉnh chuẩn'}</span>
                   </button>
                 </div>
               ) : (
@@ -2591,7 +2569,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
               <div className="flex items-center gap-2">
                 <Code2 className="w-4 h-4 text-emerald-400" />
                 <span className="font-bold text-white">
-                  Quy chuẩn Cấu trúc Dữ liệu Đầu ra JSON (System Output Schema)
+                  {lang === 'en' ? 'System JSON Output Schema' : 'Quy chuẩn Cấu trúc Dữ liệu Đầu ra JSON (System Output Schema)'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -2603,12 +2581,12 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                   {copiedSystemJson ? (
                     <>
                       <Check className="w-3.5 h-3.5" />
-                      <span>Đã sao chép JSON</span>
+                      <span>{lang === 'en' ? 'Copied JSON' : 'Đã sao chép JSON'}</span>
                     </>
                   ) : (
                     <>
                       <Copy className="w-3.5 h-3.5" />
-                      <span>Sao chép JSON</span>
+                      <span>{lang === 'en' ? 'Copy JSON' : 'Sao chép JSON'}</span>
                     </>
                   )}
                 </button>
@@ -2634,6 +2612,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
           selection={selection}
           customPrimaryHex={customPrimaryHex}
           allLookbooks={allLookbooks}
+          language={lang}
           onClose={() => setLookbookModalOpen(false)}
           onApplyCardToStudio={(card) => {
             if (onApplyCardToStudio) {
@@ -2656,7 +2635,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                 <div className="flex items-center gap-2">
                   <Ruler className="w-4 h-4 text-amber-400" />
                   <h3 className="text-sm font-bold">
-                    Hồ Sơ Số Đo 3D &amp; Đặt May
+                    {lang === 'en' ? '3D Measurement Profile & Tailoring Order' : 'Hồ Sơ Số Đo 3D & Đặt May'}
                   </h3>
                 </div>
                 <button
@@ -2671,17 +2650,15 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
               <div className="p-4 space-y-3">
                 <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200 space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Dòng trang phục:</span>
+                    <span className="text-zinc-500">{lang === 'en' ? 'Garment Line:' : 'Dòng trang phục:'}</span>
                     <strong className="text-zinc-950">{activeGarment.name}</strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Chế độ phối &amp; Size gợi ý:</span>
-                    <strong className="text-emerald-700">
-                      {groupStylingMode} · Size {computedSize}
-                    </strong>
+                    <span className="text-zinc-500">{lang === 'en' ? 'Suggested Size:' : 'Gợi ý kích thước:'}</span>
+                    <strong className="text-emerald-700">Size {computedSize}</strong>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-zinc-500">Thông số 3D (Cao / Nặng / 3 vòng):</span>
+                    <span className="text-zinc-500">{lang === 'en' ? '3D Specs (Height / Weight / B-W-H):' : 'Thông số 3D (Cao / Nặng / 3 vòng):'}</span>
                     <strong className="text-zinc-950 font-mono">
                       {computedMeasurements.height_cm}cm · {computedMeasurements.weight_kg}kg ·{' '}
                       {computedMeasurements.chest_cm}-{computedMeasurements.waist_cm}-
@@ -2693,7 +2670,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-semibold text-zinc-700">
-                      Payload JSON/QR chuẩn B2B Nhà may:
+                      {lang === 'en' ? 'Standard B2B Atelier JSON / QR Payload:' : 'Payload JSON/QR chuẩn B2B Nhà may:'}
                     </span>
                     <button
                       type="button"
@@ -2706,7 +2683,9 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       }}
                       className="text-[11px] font-semibold text-blue-600 hover:underline cursor-pointer"
                     >
-                      {copiedB2bPayload ? 'Đã sao chép!' : 'Sao chép mã số đo'}
+                      {copiedB2bPayload 
+                        ? (lang === 'en' ? 'Copied!' : 'Đã sao chép!') 
+                        : (lang === 'en' ? 'Copy Specs Code' : 'Sao chép mã số đo')}
                     </button>
                   </div>
                   <pre className="p-2.5 rounded-xl bg-zinc-950 text-emerald-300 font-mono text-[10px] overflow-x-auto max-h-36">
@@ -2731,7 +2710,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                       className="flex-1 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Send className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Chọn Nhà May Đối Tác (Tab 3)</span>
+                      <span>{lang === 'en' ? 'Select Partner Tailor Atelier (Community Tab)' : 'Chọn Nhà May Đối Tác (Tab 3)'}</span>
                     </button>
                   )}
                   <button
@@ -2739,7 +2718,7 @@ export const VirtualFittingRoom3D: React.FC<VirtualFittingRoom3DProps> = ({
                     onClick={() => setB2bModalOpen(false)}
                     className="py-2.5 px-4 rounded-xl border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-semibold cursor-pointer"
                   >
-                    Đóng
+                    {lang === 'en' ? 'Close' : 'Đóng'}
                   </button>
                 </div>
               </div>

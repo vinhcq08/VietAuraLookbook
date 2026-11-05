@@ -162,106 +162,146 @@ interface StylistEngineResult {
 function formatMandatoryStylistResponse(
   part1: StylistEngineResult['part1Summary'],
   options: StylistOptionPayload[],
-  part3: StylistEngineResult['part3CultureGuard']
+  part3: StylistEngineResult['part3CultureGuard'],
+  language: 'vi' | 'en' = 'vi'
 ): string {
-  const lines: string[] = [
-    '----------------------------------------------------------------------',
-    '[PHẦN 1: TỔNG QUAN PHÂN TÍCH BỞI AI STYLIST]',
-    `• Sự kiện: ${part1.event} · Thời tiết: ${part1.weather} · Phong cách: ${part1.style} · Ngân sách: ${part1.budget}`,
-    `• Nhận định: ${part1.overviewText}`,
-    '',
-    '[PHẦN 2: 3 PHƯƠNG ÁN LOOKBOOK GỢI Ý]',
-  ];
+  const isEn = language === 'en';
+  const lines: string[] = isEn
+    ? [
+        '----------------------------------------------------------------------',
+        '[PART 1: AI STYLIST CONTEXT & ANALYSIS]',
+        `• Occasion: ${part1.event} · Weather: ${part1.weather} · Style: ${part1.style} · Budget: ${part1.budget}`,
+        `• Overview: ${part1.overviewText}`,
+        '',
+        '[PART 2: 3 RECOMMENDED 3D LOOKBOOK OPTIONS]',
+      ]
+    : [
+        '----------------------------------------------------------------------',
+        '[PHẦN 1: TỔNG QUAN PHÂN TÍCH BỞI AI STYLIST]',
+        `• Sự kiện: ${part1.event} · Thời tiết: ${part1.weather} · Phong cách: ${part1.style} · Ngân sách: ${part1.budget}`,
+        `• Nhận định: ${part1.overviewText}`,
+        '',
+        '[PHẦN 2: 3 PHƯƠNG ÁN LOOKBOOK GỢI Ý]',
+      ];
 
   for (const opt of options) {
     const paletteStr = opt.palette.map((p) => `${p.name} (${p.hex} - ${p.role})`).join(' · ');
-    lines.push(
-      '',
-      `🌟 OPTION ${opt.optionNumber}: "${opt.outfitName}"`,
-      `• Trang phục chính: ${opt.mainGarment}`,
-      `• Phụ kiện quy chuẩn: ${opt.accessories.join(', ')}`,
-      `• Bảng màu (Palette): ${paletteStr}`,
-      `• Ý nghĩa văn hóa & Lịch sử: ${opt.culturalMeaning}`,
-      `• Mã Cấu Hình 3D (Outfit Config Code): ${JSON.stringify(opt.outfitConfigCode)}`
-    );
+    if (isEn) {
+      lines.push(
+        '',
+        `🌟 OPTION ${opt.optionNumber}: "${opt.outfitName}"`,
+        `• Main Garment: ${opt.mainGarment}`,
+        `• Standard Accessories: ${opt.accessories.join(', ')}`,
+        `• Color Palette: ${paletteStr}`,
+        `• Cultural & Historical Meaning: ${opt.culturalMeaning}`,
+        `• 3D Outfit Config Code: ${JSON.stringify(opt.outfitConfigCode)}`
+      );
+    } else {
+      lines.push(
+        '',
+        `🌟 OPTION ${opt.optionNumber}: "${opt.outfitName}"`,
+        `• Trang phục chính: ${opt.mainGarment}`,
+        `• Phụ kiện quy chuẩn: ${opt.accessories.join(', ')}`,
+        `• Bảng màu (Palette): ${paletteStr}`,
+        `• Ý nghĩa văn hóa & Lịch sử: ${opt.culturalMeaning}`,
+        `• Mã Cấu Hình 3D (Outfit Config Code): ${JSON.stringify(opt.outfitConfigCode)}`
+      );
+    }
   }
 
-  lines.push(
-    '',
-    '[PHẦN 3: XÁC THỰC CULTURE GUARD & LƯU Ý VĂN HÓA]',
-    `• Trạng thái: ${part3.statusLabel}`,
-    `• Chi tiết lưu ý: ${part3.detailNote}`,
-    '----------------------------------------------------------------------'
-  );
+  if (isEn) {
+    lines.push(
+      '',
+      '[PART 3: CULTURE GUARD VERIFICATION & HERITAGE NOTES]',
+      `• Status: ${part3.statusLabel}`,
+      `• Detail Note: ${part3.detailNote}`,
+      '----------------------------------------------------------------------'
+    );
+  } else {
+    lines.push(
+      '',
+      '[PHẦN 3: XÁC THỰC CULTURE GUARD & LƯU Ý VĂN HÓA]',
+      `• Trạng thái: ${part3.statusLabel}`,
+      `• Chi tiết lưu ý: ${part3.detailNote}`,
+      '----------------------------------------------------------------------'
+    );
+  }
 
   return lines.join('\n');
 }
 
 function buildIntelligentCulturalFallback(
   userPrompt: string,
-  quizInputs?: { event?: string; weather?: string; style?: string; budget?: string; gender?: string }
+  quizInputs?: { event?: string; weather?: string; style?: string; budget?: string; gender?: string },
+  language: 'vi' | 'en' = 'vi'
 ): StylistEngineResult {
+  const isEn = language === 'en';
   const lower = userPrompt.toLowerCase();
   const isMale =
     quizInputs?.gender === 'nam' ||
     lower.includes('nam sinh') ||
     lower.includes('nam giới') ||
     lower.includes('bạn nam') ||
-    lower.includes('con trai');
+    lower.includes('con trai') ||
+    lower.includes('male') ||
+    lower.includes('man') ||
+    lower.includes('boy');
 
   const detectedEvent =
     quizInputs?.event ||
-    (lower.includes('cưới') || lower.includes('ăn hỏi')
-      ? 'Lễ cưới hỏi truyền thống'
-      : lower.includes('chùa') || lower.includes('lễ hội') || lower.includes('quan họ')
-      ? 'Đi chùa / Lễ hội di tích'
-      : lower.includes('kỷ yếu')
-      ? 'Chụp ảnh kỷ yếu'
-      : lower.includes('dạo phố')
-      ? 'Dạo phố & Chụp ảnh ngoại cảnh'
-      : 'Lễ tốt nghiệp & Kỷ yếu di tích');
+    (lower.includes('cưới') || lower.includes('ăn hỏi') || lower.includes('wedding')
+      ? isEn ? 'Traditional Wedding & Engagement' : 'Lễ cưới hỏi truyền thống'
+      : lower.includes('chùa') || lower.includes('lễ hội') || lower.includes('quan họ') || lower.includes('temple') || lower.includes('festival')
+      ? isEn ? 'Temple Visit & Heritage Festival' : 'Đi chùa / Lễ hội di tích'
+      : lower.includes('kỷ yếu') || lower.includes('yearbook')
+      ? isEn ? 'Yearbook Photoshoot' : 'Chụp ảnh kỷ yếu'
+      : lower.includes('dạo phố') || lower.includes('street') || lower.includes('walk') || lower.includes('casual')
+      ? isEn ? 'City Walk & Casual Shoot' : 'Dạo phố & Chụp ảnh ngoại cảnh'
+      : isEn ? 'Graduation Ceremony & Heritage Yearbook' : 'Lễ tốt nghiệp & Kỷ yếu di tích');
 
   const detectedWeather =
     quizInputs?.weather ||
-    (lower.includes('hè') || lower.includes('nóng') || lower.includes('hạ')
-      ? 'Mùa hè / Hot (28–34°C · Cần vải đũi/tơ thoáng khí)'
-      : lower.includes('đông') || lower.includes('lạnh')
-      ? 'Mùa đông / Cold (14–18°C · Ưu tiên gấm dệt / lụa dày 2 lớp)'
-      : 'Mùa thu / Cool (20–25°C · Tiết trời se mát lý tưởng)');
+    (lower.includes('hè') || lower.includes('nóng') || lower.includes('hạ') || lower.includes('summer') || lower.includes('hot')
+      ? isEn ? 'Summer / Warm (28–34°C · Breathable raw silk recommended)' : 'Mùa hè / Hot (28–34°C · Cần vải đũi/tơ thoáng khí)'
+      : lower.includes('đông') || lower.includes('lạnh') || lower.includes('winter') || lower.includes('cold')
+      ? isEn ? 'Winter / Chilly (14–18°C · Double-layer woven brocade recommended)' : 'Mùa đông / Cold (14–18°C · Ưu tiên gấm dệt / lụa dày 2 lớp)'
+      : isEn ? 'Autumn / Cool (20–25°C · Ideal crisp weather)' : 'Mùa thu / Cool (20–25°C · Tiết trời se mát lý tưởng)');
 
   const detectedStyle =
     quizInputs?.style ||
-    (lower.includes('tối giản')
-      ? 'Tối giản thanh lịch'
-      : lower.includes('hiện đại') || lower.includes('phá cách')
-      ? 'Phá cách hiện đại'
-      : 'Cổ điển trang trọng');
+    (lower.includes('tối giản') || lower.includes('minimal')
+      ? isEn ? 'Minimalist & Elegant' : 'Tối giản thanh lịch'
+      : lower.includes('hiện đại') || lower.includes('phá cách') || lower.includes('fusion') || lower.includes('modern')
+      ? isEn ? 'Modern Fusion' : 'Phá cách hiện đại'
+      : isEn ? 'Traditional Formal' : 'Cổ điển trang trọng');
 
   const detectedBudget =
     quizInputs?.budget ||
-    (lower.includes('cao cấp')
-      ? 'Cao cấp (May đo gấm/tơ tằm thủ công)'
-      : lower.includes('phổ thông')
-      ? 'Phổ thông (Thuê/May lụa tơ chọn lọc)'
-      : 'Tiết kiệm (Học sinh / Sinh viên)');
+    (lower.includes('cao cấp') || lower.includes('luxury') || lower.includes('high')
+      ? isEn ? 'Luxury / Tailored Handmade Brocade' : 'Cao cấp (May đo gấm/tơ tằm thủ công)'
+      : lower.includes('phổ thông') || lower.includes('standard')
+      ? isEn ? 'Standard (Selected silk rental/tailoring)' : 'Phổ thông (Thuê/May lụa tơ chọn lọc)'
+      : isEn ? 'Student Friendly / Economical' : 'Tiết kiệm (Học sinh / Sinh viên)');
 
   // Check Culture Guard Violations (RULE 1, RULE 2, RULE 3, RULE 4)
   const rule1Violation =
-    (lower.includes('nón quai thao') || lower.includes('nón ba tầm')) &&
-    (isMale || lower.includes('nam') || lower.includes('ngũ thân nam'));
+    (lower.includes('nón quai thao') || lower.includes('nón ba tầm') || lower.includes('quai thao')) &&
+    (isMale || lower.includes('nam') || lower.includes('ngũ thân nam') || lower.includes('male'));
   const rule2Violation =
-    lower.includes('rồng 5 móng') || lower.includes('ngũ trảo') || lower.includes('long bào');
+    lower.includes('rồng 5 móng') || lower.includes('ngũ trảo') || lower.includes('long bào') || lower.includes('5-claw dragon') || lower.includes('five-claw');
   const rule3Violation =
-    lower.includes('nhật bình') &&
+    (lower.includes('nhật bình') || lower.includes('nhat binh')) &&
     (lower.includes('váy ngắn') ||
       lower.includes('váy đụp ngắn') ||
       lower.includes('jean') ||
-      lower.includes('sneaker'));
+      lower.includes('sneaker') ||
+      lower.includes('short skirt'));
   const rule4FusionTip =
     !rule3Violation &&
     (lower.includes('sneaker') ||
       lower.includes('jean') ||
       lower.includes('kính mát') ||
+      lower.includes('sunglasses') ||
       lower.includes('streetwear'));
 
   const hasViolation = rule1Violation || rule2Violation || rule3Violation || rule4FusionTip;
@@ -276,34 +316,50 @@ function buildIntelligentCulturalFallback(
     : null;
 
   const statusLabel = hasViolation
-    ? '🔴 Cảnh báo (Cần điều chỉnh)'
-    : '🟢 Đã kiểm duyệt (Approved)';
+    ? isEn ? '🔴 Warning (Adjustment Needed)' : '🔴 Cảnh báo (Cần điều chỉnh)'
+    : isEn ? '🟢 Approved (Heritage Compliant)' : '🟢 Đã kiểm duyệt (Approved)';
 
   const detailNote = rule1Violation
-    ? 'VI PHẠM RULE 1 (Giới tính & Phụ kiện): KHÔNG phối Nón quai thao / Nón ba tầm với Áo Ngũ Thân nam giới (Nón quai thao dành riêng cho nữ giới miền Bắc). Hệ thống đã tự động chuẩn hóa sang Khăn xếp chữ Nhân và Quạt xếp trầm hương trong 3 phương án 3D bên trên.'
+    ? isEn
+      ? 'RULE 1 VIOLATION (Gender & Accessories): DO NOT pair Nón Quai Thao with male Áo Ngũ Thân (Nón Quai Thao is exclusively for Northern females). The system automatically standardized to Khăn Xếp and agarwood folding fan in the 3 3D options above.'
+      : 'VI PHẠM RULE 1 (Giới tính & Phụ kiện): KHÔNG phối Nón quai thao / Nón ba tầm với Áo Ngũ Thân nam giới (Nón quai thao dành riêng cho nữ giới miền Bắc). Hệ thống đã tự động chuẩn hóa sang Khăn xếp chữ Nhân và Quạt xếp trầm hương trong 3 phương án 3D bên trên.'
     : rule2Violation
-    ? 'VI PHẠM RULE 2 (Họa tiết & Phân cấp): KHÔNG dùng họa tiết Rồng 5 móng cho trang phục dân gian/thường phục (Rồng 5 móng là đặc quyền tối cao của Hoàng đế triều Nguyễn). Hệ thống đã chuyển sang họa tiết Ám hoa Liên Hoa & Tứ Quý chuẩn mực.'
+    ? isEn
+      ? 'RULE 2 VIOLATION (Motifs & Ranking): DO NOT use 5-claw dragon motifs on folk or everyday garments (5-claw dragons were reserved exclusively for the Nguyễn Dynasty Emperor). The system adjusted to standard woven Lotus & Four Seasons motifs.'
+      : 'VI PHẠM RULE 2 (Họa tiết & Phân cấp): KHÔNG dùng họa tiết Rồng 5 móng cho trang phục dân gian/thường phục (Rồng 5 móng là đặc quyền tối cao của Hoàng đế triều Nguyễn). Hệ thống đã chuyển sang họa tiết Ám hoa Liên Hoa & Tứ Quý chuẩn mực.'
     : rule3Violation
-    ? 'VI PHẠM RULE 3 (Đồng bộ Lễ phục): KHÔNG phối Áo Nhật Bình với váy đụp ngắn hoặc quần jeans hiện đại. Hệ thống đã chuẩn hóa sang Quần lụa trắng Bạch Ngọc ống rộng và Hài thêu cung đình.'
+    ? isEn
+      ? 'RULE 3 VIOLATION (Ceremonial Coherence): DO NOT pair Áo Nhật Bình with short skirts or modern jeans. The system standardized to wide-leg White Jade silk trousers and imperial embroidered Hài Thêu.'
+      : 'VI PHẠM RULE 3 (Đồng bộ Lễ phục): KHÔNG phối Áo Nhật Bình với váy đụp ngắn hoặc quần jeans hiện đại. Hệ thống đã chuẩn hóa sang Quần lụa trắng Bạch Ngọc ống rộng và Hài thêu cung đình.'
     : rule4FusionTip
-    ? 'LƯU Ý RULE 4 (Culture Tip · Streetwear / Modern Fusion): Khi phối trang phục truyền thống (Áo Ngũ Thân / Áo Bà Ba / Áo Dài) cùng đồ hiện đại (Quần Jeans, Sneaker, Kính mát), bộ trang phục mang hơi thở Streetwear cá tính — rất phù hợp để đi cafe, dạo phố hoặc chụp ảnh ngoại cảnh đương đại. Nếu đi chùa, đền miếu hay dự lễ nghi trang nghiêm, bạn nên đổi sang quần lụa trắng và guốc mộc truyền thống.'
+    ? isEn
+      ? 'RULE 4 NOTE (Culture Tip · Modern Fusion): Combining traditional garments (Áo Ngũ Thân / Áo Bà Ba / Áo Dài) with modern items (jeans, sneakers, sunglasses) offers a trendy Streetwear flair—great for cafes, casual strolls, or outdoor shoots. For sacred temples or solemn ceremonies, please switch to traditional white silk trousers and Guốc Mộc.'
+      : 'LƯU Ý RULE 4 (Culture Tip · Streetwear / Modern Fusion): Khi phối trang phục truyền thống (Áo Ngũ Thân / Áo Bà Ba / Áo Dài) cùng đồ hiện đại (Quần Jeans, Sneaker, Kính mát), bộ trang phục mang hơi thở Streetwear cá tính — rất phù hợp để đi cafe, dạo phố hoặc chụp ảnh ngoại cảnh đương đại. Nếu đi chùa, đền miếu hay dự lễ nghi trang nghiêm, bạn nên đổi sang quần lụa trắng và guốc mộc truyền thống.'
+    : isEn
+    ? 'All 3 3D Lookbook options strictly adhere to Vietnamese heritage guidelines (Rule 1: Gender-appropriate accessories; Rule 2: Rank-appropriate motifs; Rule 3: Coordinated silk trousers/skirts with Guốc Mộc or Hài Thêu).'
     : 'Cả 3 phương án Lookbook 3D đều tuân thủ nghiêm ngặt quy chuẩn cổ lệ Việt Nam (Rule 1: Phụ kiện đúng giới tính; Rule 2: Hoa văn Ám hoa/Tứ Quý/Loan Phượng đúng phẩm cấp; Rule 3: Quần lụa/Váy đụp & Guốc mộc/Hài thêu đồng bộ phom dáng).';
 
   const option1: StylistOptionPayload = {
     optionNumber: 1,
-    outfitName: isMale ? 'Khuê Văn Quân Tử — Ngũ Thân Lập Lĩnh' : 'Khuê Văn Tri Thức — Ngũ Thân Tay Chẽn',
-    styleLabel: 'Cổ điển trang trọng',
-    budgetTier: 'Tiết kiệm (Học sinh/Sinh viên)',
-    mainGarment:
-      'Áo Ngũ Thân tay chẽn vải tơ đũi màu Xanh Ngọc Lam (ngoài), áo lót cổ đứng trắng ngà bên trong phối cùng quần lụa trắng ống rộng xòe tự nhiên.',
-    accessories: ['Khăn xếp (Khăn vấn) đồng bộ', 'Guốc gỗ mộc truyền thống', 'Quạt xếp trầm hương'],
+    outfitName: isEn
+      ? isMale ? 'Khuê Văn Scholar — Áo Ngũ Thân Standing Collar' : 'Khuê Văn Intellect — Áo Ngũ Thân Tay Chẽn'
+      : isMale ? 'Khuê Văn Quân Tử — Ngũ Thân Lập Lĩnh' : 'Khuê Văn Tri Thức — Ngũ Thân Tay Chẽn',
+    styleLabel: isEn ? 'Traditional Formal' : 'Cổ điển trang trọng',
+    budgetTier: isEn ? 'Student Friendly' : 'Tiết kiệm (Học sinh/Sinh viên)',
+    mainGarment: isEn
+      ? 'Áo Ngũ Thân Tay Chẽn in Jade Cyan raw silk, ivory standing collar inner shirt paired with wide-leg white silk trousers.'
+      : 'Áo Ngũ Thân tay chẽn vải tơ đũi màu Xanh Ngọc Lam (ngoài), áo lót cổ đứng trắng ngà bên trong phối cùng quần lụa trắng ống rộng xòe tự nhiên.',
+    accessories: isEn
+      ? ['Matching Khăn Xếp', 'Traditional Guốc Mộc', 'Agarwood folding fan']
+      : ['Khăn xếp (Khăn vấn) đồng bộ', 'Guốc gỗ mộc truyền thống', 'Quạt xếp trầm hương'],
     palette: [
-      { name: 'Xanh Ngọc Lam', hex: '#2E8B57', role: 'Áo ngoài' },
-      { name: 'Trắng Ngà', hex: '#FFFFF0', role: 'Áo lót & Quần lụa' },
-      { name: 'Gỗ Trầm', hex: '#8B4513', role: 'Guốc & Quạt' },
+      { name: isEn ? 'Jade Cyan' : 'Xanh Ngọc Lam', hex: '#2E8B57', role: isEn ? 'Outer robe' : 'Áo ngoài' },
+      { name: isEn ? 'Ivory White' : 'Trắng Ngà', hex: '#FFFFF0', role: isEn ? 'Inner & trousers' : 'Áo lót & Quần lụa' },
+      { name: isEn ? 'Agarwood' : 'Gỗ Trầm', hex: '#8B4513', role: isEn ? 'Guốc & Fan' : 'Guốc & Quạt' },
     ],
-    culturalMeaning:
-      'Định hình năm 1744 thời Võ Vương Nguyễn Phúc Khoát, 5 vạt áo tượng trưng cho Tứ thân phụ mẫu chở che người con (vạt con thứ 5), 5 hạt khuy đại diện cho Ngũ Thường (Nhân, Lễ, Nghĩa, Trí, Tín).',
+    culturalMeaning: isEn
+      ? 'Standardized in 1744 under Lord Nguyễn Phúc Khoát; the 5 panels symbolize parents protecting their child, and the 5 buttons embody the Five Constant Virtues (Benevolence, Righteousness, Propriety, Wisdom, Fidelity).'
+      : 'Định hình năm 1744 thời Võ Vương Nguyễn Phúc Khoát, 5 vạt áo tượng trưng cho Tứ thân phụ mẫu chở che người con (vạt con thứ 5), 5 hạt khuy đại diện cho Ngũ Thường (Nhân, Lễ, Nghĩa, Trí, Tín).',
     outfitConfigCode: {
       config_id: isMale ? 'CFG_OPT1_NGUTHAN_NAM' : 'CFG_OPT1_NGUTHAN_NU',
       gender: isMale ? 'nam' : 'nu',
@@ -322,22 +378,26 @@ function buildIntelligentCulturalFallback(
   };
 
   const option2: StylistOptionPayload =
-    !isMale && (lower.includes('cưới') || lower.includes('nhật bình') || lower.includes('kỷ yếu') || rule3Violation)
+    !isMale && (lower.includes('cưới') || lower.includes('nhật bình') || lower.includes('kỷ yếu') || lower.includes('wedding') || rule3Violation)
       ? {
           optionNumber: 2,
-          outfitName: 'Chu Sa Ngự Uyển — Nhật Bình Cung Đình',
-          styleLabel: 'Cổ điển lộng lẫy',
-          budgetTier: 'Cao cấp / Lễ phục',
-          mainGarment:
-            'Áo Nhật Bình gấm tơ tằm màu Đỏ Chu Sa thêu Loan Phượng & Bát Bửu, tay rộng viền dải ngũ sắc Ngũ Hành phối cùng quần lụa trắng Bạch Ngọc.',
-          accessories: ['Mấn đội đầu cung đình', 'Xuyến bạc chạm khắc', 'Hài thêu mũi cong truyền thống'],
+          outfitName: isEn ? 'Chu Sa Imperial Garden — Áo Nhật Bình Royal Attire' : 'Chu Sa Ngự Uyển — Nhật Bình Cung Đình',
+          styleLabel: isEn ? 'Regal & Magnificent' : 'Cổ điển lộng lẫy',
+          budgetTier: isEn ? 'Luxury / Ceremonial' : 'Cao cấp / Lễ phục',
+          mainGarment: isEn
+            ? 'Áo Nhật Bình in Cinnabar Red silk brocade embroidered with Phoenix & Eight Treasures, wide sleeves bordered with Five Elements bands, paired with White Jade silk trousers.'
+            : 'Áo Nhật Bình gấm tơ tằm màu Đỏ Chu Sa thêu Loan Phượng & Bát Bửu, tay rộng viền dải ngũ sắc Ngũ Hành phối cùng quần lụa trắng Bạch Ngọc.',
+          accessories: isEn
+            ? ['Imperial Mấn Đội Đầu', 'Engraved silver bangles', 'Traditional curved-toe Hài Thêu']
+            : ['Mấn đội đầu cung đình', 'Xuyến bạc chạm khắc', 'Hài thêu mũi cong truyền thống'],
           palette: [
-            { name: 'Đỏ Chu Sa', hex: '#9A3412', role: 'Áo Nhật Bình' },
-            { name: 'Hoàng Kim', hex: '#D97706', role: 'Viền ngũ sắc & Thêu' },
-            { name: 'Bạch Ngọc', hex: '#FAF8F5', role: 'Quần lụa' },
+            { name: isEn ? 'Cinnabar Red' : 'Đỏ Chu Sa', hex: '#9A3412', role: isEn ? 'Áo Nhật Bình' : 'Áo Nhật Bình' },
+            { name: isEn ? 'Imperial Gold' : 'Hoàng Kim', hex: '#D97706', role: isEn ? 'Five elements border' : 'Viền ngũ sắc & Thêu' },
+            { name: isEn ? 'White Jade' : 'Bạch Ngọc', hex: '#FAF8F5', role: isEn ? 'Silk trousers' : 'Quần lụa' },
           ],
-          culturalMeaning:
-            'Thường phục của Hậu phi, Công chúa và lễ phục mệnh phụ phu nhân triều Nguyễn (1802–1945); cổ chữ nhật uy nghi kết hợp 5 sắc màu Kim - Mộc - Thủy - Hỏa - Thổ nơi cổ tay.',
+          culturalMeaning: isEn
+            ? 'Everyday attire for Imperial Empresses and Princesses during the Nguyễn Dynasty (1802–1945); dignified rectangular collar with Five Elements (Metal, Wood, Water, Fire, Earth) bands on sleeves.'
+            : 'Thường phục của Hậu phi, Công chúa và lễ phục mệnh phụ phu nhân triều Nguyễn (1802–1945); cổ chữ nhật uy nghi kết hợp 5 sắc màu Kim - Mộc - Thủy - Hỏa - Thổ nơi cổ tay.',
           outfitConfigCode: {
             config_id: 'CFG_OPT2_NHATBINH_NU',
             gender: 'nu',
@@ -356,19 +416,23 @@ function buildIntelligentCulturalFallback(
         }
       : {
           optionNumber: 2,
-          outfitName: 'Thanh Phong Niên Hoa — Ngũ Thân Lam Cổ Điển',
-          styleLabel: 'Tối giản thanh lịch',
-          budgetTier: 'Phổ thông',
-          mainGarment:
-            'Áo Ngũ Thân lụa nha xá màu Lam Cổ Điển dệt hoa chìm Liên Hoa, mặc ngoài áo lót trắng và quần lụa màu ngà tự nhiên.',
-          accessories: ['Khăn xếp lam thẫm', 'Quạt xếp nan trúc', 'Guốc gỗ mộc tối giản'],
+          outfitName: isEn ? 'Thanh Phong Classic Indigo — Áo Ngũ Thân' : 'Thanh Phong Niên Hoa — Ngũ Thân Lam Cổ Điển',
+          styleLabel: isEn ? 'Minimalist & Elegant' : 'Tối giản thanh lịch',
+          budgetTier: isEn ? 'Standard' : 'Phổ thông',
+          mainGarment: isEn
+            ? 'Áo Ngũ Thân in Nha Xá silk in Classic Indigo with subtle woven Lotus motifs, worn over white inner shirt and natural ivory silk trousers.'
+            : 'Áo Ngũ Thân lụa nha xá màu Lam Cổ Điển dệt hoa chìm Liên Hoa, mặc ngoài áo lót trắng và quần lụa màu ngà tự nhiên.',
+          accessories: isEn
+            ? ['Deep indigo Khăn Xếp', 'Bamboo rib folding fan', 'Minimalist Guốc Mộc']
+            : ['Khăn xếp lam thẫm', 'Quạt xếp nan trúc', 'Guốc gỗ mộc tối giản'],
           palette: [
-            { name: 'Lam Cổ Điển', hex: '#1E3A8A', role: 'Áo ngoài' },
-            { name: 'Thanh Trúc', hex: '#4D7C0F', role: 'Điểm nhấn' },
-            { name: 'Ngà Lụa', hex: '#F5F5DC', role: 'Áo lót & Quần' },
+            { name: isEn ? 'Classic Indigo' : 'Lam Cổ Điển', hex: '#1E3A8A', role: isEn ? 'Outer robe' : 'Áo ngoài' },
+            { name: isEn ? 'Bamboo Green' : 'Thanh Trúc', hex: '#4D7C0F', role: isEn ? 'Accent' : 'Điểm nhấn' },
+            { name: isEn ? 'Silk Ivory' : 'Ngà Lụa', hex: '#F5F5DC', role: isEn ? 'Inner & Trousers' : 'Áo lót & Quần' },
           ],
-          culturalMeaning:
-            'Giữ trọn quy chuẩn cổ lập lĩnh 5 khuy thời Minh Mạng với sắc lam trầm tĩnh tại, tôn vinh vẻ đẹp trí thức trẻ trung và tối giản.',
+          culturalMeaning: isEn
+            ? 'Faithfully preserves Emperor Minh Mạng era 5-button collar regulations in calm indigo tones, honoring youthful intellectual elegance.'
+            : 'Giữ trọn quy chuẩn cổ lập lĩnh 5 khuy thời Minh Mạng với sắc lam trầm tĩnh tại, tôn vinh vẻ đẹp trí thức trẻ trung và tối giản.',
           outfitConfigCode: {
             config_id: isMale ? 'CFG_OPT2_THANHPHONG_NAM' : 'CFG_OPT2_THANHPHONG_NU',
             gender: isMale ? 'nam' : 'nu',
@@ -389,19 +453,23 @@ function buildIntelligentCulturalFallback(
   const option3: StylistOptionPayload = !isMale
     ? {
         optionNumber: 3,
-        outfitName: 'Kinh Bắc Đào Hoa — Tứ Thân & Yếm Thắm',
-        styleLabel: 'Dân gian & Phá cách nhẹ nhàng',
-        budgetTier: 'Tiết kiệm (Học sinh/Sinh viên)',
-        mainGarment:
-          'Áo Tứ Thân vải đũi tơ màu Nâu Quế Trầm buông rủ bên ngoài, áo Yếm Đào đỏ thắm bên trong phối cùng Váy đụp lụa đen xòe chữ A.',
-        accessories: ['Nón ba tầm (Nón quai thao)', 'Dải thắt lưng bao lụa xanh', 'Guốc mộc quai ngang'],
+        outfitName: isEn ? 'Kinh Bắc Blossom — Áo Tứ Thân & Yếm Thắm' : 'Kinh Bắc Đào Hoa — Tứ Thân & Yếm Thắm',
+        styleLabel: isEn ? 'Folklore & Gentle Accents' : 'Dân gian & Phá cách nhẹ nhàng',
+        budgetTier: isEn ? 'Student Friendly' : 'Tiết kiệm (Học sinh/Sinh viên)',
+        mainGarment: isEn
+          ? 'Áo Tứ Thân in Cinnamon Brown flowing outer panels, Crimson Yếm inner top paired with A-line black silk flowing skirt.'
+          : 'Áo Tứ Thân vải đũi tơ màu Nâu Quế Trầm buông rủ bên ngoài, áo Yếm Đào đỏ thắm bên trong phối cùng Váy đụp lụa đen xòe chữ A.',
+        accessories: isEn
+          ? ['Nón Quai Thao (Nón ba tầm)', 'Green silk waist sash', 'Guốc Mộc with strap']
+          : ['Nón ba tầm (Nón quai thao)', 'Dải thắt lưng bao lụa xanh', 'Guốc mộc quai ngang'],
         palette: [
-          { name: 'Nâu Quế Trầm', hex: '#78350F', role: 'Áo tứ thân ngoài' },
-          { name: 'Đỏ Yếm Đào', hex: '#B91C1C', role: 'Yếm đào' },
-          { name: 'Đen Huyền', hex: '#1C1917', role: 'Váy đụp xòe' },
+          { name: isEn ? 'Cinnamon Brown' : 'Nâu Quế Trầm', hex: '#78350F', role: isEn ? 'Outer robe' : 'Áo tứ thân ngoài' },
+          { name: isEn ? 'Crimson Yếm' : 'Đỏ Yếm Đào', hex: '#B91C1C', role: isEn ? 'Yếm top' : 'Yếm đào' },
+          { name: isEn ? 'Raven Black' : 'Đen Huyền', hex: '#1C1917', role: isEn ? 'Silk skirt' : 'Váy đụp xòe' },
         ],
-        culturalMeaning:
-          'Di sản văn hóa Quan họ Bắc Ninh với cấu trúc 4 vạt duyên dáng và nghệ thuật phối màu nhiều lớp "mớ ba mớ bảy" đậm hồn quê Bắc Bộ.',
+        culturalMeaning: isEn
+          ? 'Cultural heritage of Bắc Ninh Quan Họ folk traditions with 4 graceful panels and the multi-layered layering art embodying Northern countryside spirit.'
+          : 'Di sản văn hóa Quan họ Bắc Ninh với cấu trúc 4 vạt duyên dáng và nghệ thuật phối màu nhiều lớp "mớ ba mớ bảy" đậm hồn quê Bắc Bộ.',
         outfitConfigCode: {
           config_id: 'CFG_OPT3_TUTHAN_NU',
           gender: 'nu',
@@ -420,19 +488,23 @@ function buildIntelligentCulturalFallback(
       }
     : {
         optionNumber: 3,
-        outfitName: 'Phương Nam Hào Sảng — Bà Ba & Khăn Rằn',
-        styleLabel: 'Phóng khoáng hiện đại',
-        budgetTier: 'Tiết kiệm (Học sinh/Sinh viên)',
-        mainGarment:
-          'Áo Bà Ba tơ đũi màu Be Cát Trắng xẻ tà hai bên thoáng mát, phối cùng quần lụa đen ống rộng truyền thống.',
-        accessories: ['Khăn rằn Nam Bộ kẻ ô', 'Nón lá chằm tay', 'Guốc gỗ mộc tự nhiên'],
+        outfitName: isEn ? 'Southern Charm — Áo Bà Ba & Khăn Rằn' : 'Phương Nam Hào Sảng — Bà Ba & Khăn Rằn',
+        styleLabel: isEn ? 'Relaxed & Modern' : 'Phóng khoáng hiện đại',
+        budgetTier: isEn ? 'Student Friendly' : 'Tiết kiệm (Học sinh/Sinh viên)',
+        mainGarment: isEn
+          ? 'Áo Bà Ba in Sand White raw silk with airy side slits, paired with traditional wide-leg black silk trousers.'
+          : 'Áo Bà Ba tơ đũi màu Be Cát Trắng xẻ tà hai bên thoáng mát, phối cùng quần lụa đen ống rộng truyền thống.',
+        accessories: isEn
+          ? ['Southern checkered Khăn Rằn', 'Handwoven conical hat', 'Natural Guốc Mộc']
+          : ['Khăn rằn Nam Bộ kẻ ô', 'Nón lá chằm tay', 'Guốc gỗ mộc tự nhiên'],
         palette: [
-          { name: 'Be Cát Trắng', hex: '#D6CEBE', role: 'Áo chính' },
-          { name: 'Đen Khăn Rằn', hex: '#27272A', role: 'Quần lụa & Khăn' },
-          { name: 'Nâu Tre Mộc', hex: '#A16207', role: 'Nón lá & Guốc' },
+          { name: isEn ? 'Sand White' : 'Be Cát Trắng', hex: '#D6CEBE', role: isEn ? 'Main top' : 'Áo chính' },
+          { name: isEn ? 'Khăn Rằn Black' : 'Đen Khăn Rằn', hex: '#27272A', role: isEn ? 'Trousers & Scarf' : 'Quần lụa & Khăn' },
+          { name: isEn ? 'Bamboo Brown' : 'Nâu Tre Mộc', hex: '#A16207', role: isEn ? 'Hat & Guốc' : 'Nón lá & Guốc' },
         ],
-        culturalMeaning:
-          'Biểu tượng văn hóa đặc trưng của vùng sông nước Nam Bộ, đề cao sự mộc mạc, phóng khoáng và thoải mái khi dạo phố hay chụp ảnh ngoại cảnh.',
+        culturalMeaning: isEn
+          ? 'Symbolic cultural attire of the Southern river region, embodying simplicity, generosity, and comfortable movement for casual strolls or photography.'
+          : 'Biểu tượng văn hóa đặc trưng của vùng sông nước Nam Bộ, đề cao sự mộc mạc, phóng khoáng và thoải mái khi dạo phố hay chụp ảnh ngoại cảnh.',
         outfitConfigCode: {
           config_id: 'CFG_OPT3_BABA_NAM',
           gender: 'nam',
@@ -456,7 +528,11 @@ function buildIntelligentCulturalFallback(
     style: detectedStyle,
     budget: detectedBudget,
     overviewText: hasViolation
-      ? `Hệ thống AI Stylist đã phân tích nhu cầu của bạn cho dịp "${detectedEvent}" (${detectedWeather}, phong cách ${detectedStyle}, ngân sách ${detectedBudget}) và đồng thời kích hoạt bộ lọc Culture Guard để điều chỉnh chi tiết lệch chuẩn văn hóa sang 3 phương án Lookbook 3D chuẩn cổ lệ dưới đây.`
+      ? isEn
+        ? `The AI Stylist analyzed your styling request for "${detectedEvent}" (${detectedWeather}, style: ${detectedStyle}, budget: ${detectedBudget}) and triggered the Culture Guard filter to adjust deviations into 3 heritage-compliant 3D options below.`
+        : `Hệ thống AI Stylist đã phân tích nhu cầu của bạn cho dịp "${detectedEvent}" (${detectedWeather}, phong cách ${detectedStyle}, ngân sách ${detectedBudget}) và đồng thời kích hoạt bộ lọc Culture Guard để điều chỉnh chi tiết lệch chuẩn văn hóa sang 3 phương án Lookbook 3D chuẩn cổ lệ dưới đây.`
+      : isEn
+      ? `Based on your context: Occasion "${detectedEvent}", Weather "${detectedWeather}", Style "${detectedStyle}", and Budget "${detectedBudget}", the AI Smart Stylist proposes 3 optimized 3D Lookbook options ready to try in the Virtual Fitting Room.`
       : `Dựa trên ngữ cảnh Sự kiện "${detectedEvent}", Thời tiết "${detectedWeather}", Phong cách "${detectedStyle}" và Ngân sách "${detectedBudget}", AI Smart Stylist đề xuất 3 phương án Lookbook 3D tối ưu có sẵn mã cấu hình để ướm thử ngay trong Phòng thử 3D.`,
   };
 
@@ -472,12 +548,13 @@ function buildIntelligentCulturalFallback(
   const formattedMarkdownReport = formatMandatoryStylistResponse(
     part1Summary,
     part2Options,
-    part3CultureGuard
+    part3CultureGuard,
+    language
   );
 
   // Pick primary card matching user intent best
   const primaryOpt =
-    lower.includes('nhật bình') || lower.includes('cưới')
+    lower.includes('nhật bình') || lower.includes('cưới') || lower.includes('wedding')
       ? option2
       : lower.includes('tứ thân') || lower.includes('quan họ') || lower.includes('bà ba')
       ? option3
@@ -813,13 +890,108 @@ function classifySocialPostHeuristic(input: {
   };
 }
 
+// ============================================================================
+// SINGLETON GEMINI CLIENT & TIMEOUT WRAPPER
+// ============================================================================
+let cachedAiClient: GoogleGenAI | null = null;
+let lastApiKey: string | undefined = undefined;
+
+function getGeminiClient(): GoogleGenAI | null {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    return null;
+  }
+  if (!cachedAiClient || lastApiKey !== apiKey) {
+    cachedAiClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
+    });
+    lastApiKey = apiKey;
+  }
+  return cachedAiClient;
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs = 12000): Promise<T> {
+  let timer: NodeJS.Timeout | null = null;
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(`Gemini API call timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+// ============================================================================
+// HIGH-PERFORMANCE IN-MEMORY TTL CACHE
+// ============================================================================
+interface CacheEntry<T> {
+  value: T;
+  expiresAt: number;
+}
+
+class SimpleTtlCache<T> {
+  private cache = new Map<string, CacheEntry<T>>();
+  private maxSize: number;
+  private ttlMs: number;
+
+  constructor(maxSize = 120, ttlMinutes = 20) {
+    this.maxSize = maxSize;
+    this.ttlMs = ttlMinutes * 60 * 1000;
+  }
+
+  get(key: string): T | null {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.value;
+  }
+
+  set(key: string, value: T): void {
+    if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) this.cache.delete(oldestKey);
+    }
+    this.cache.set(key, { value, expiresAt: Date.now() + this.ttlMs });
+  }
+}
+
+const socialClassifyCache = new SimpleTtlCache<any>(100, 20);
+const lookbookGenCache = new SimpleTtlCache<any>(100, 30);
+const lookbookCompareCache = new SimpleTtlCache<any>(60, 30);
+const advisorChatCache = new SimpleTtlCache<any>(80, 15);
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json({ limit: '2mb' }));
-  app.use(express.static(path.resolve(process.cwd(), 'public')));
-  app.use('/src/assets/images', express.static(path.resolve(process.cwd(), 'src/assets/images')));
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  app.use(express.static(path.resolve(process.cwd(), 'public'), { maxAge: '1d' }));
+  app.use(
+    '/src/assets/images',
+    express.static(path.resolve(process.cwd(), 'src/assets/images'), { maxAge: '7d' })
+  );
+
+  // Healthcheck endpoint for Cloud Run / Production monitoring
+  app.get('/api/health', (_req, res) => {
+    const ai = getGeminiClient();
+    res.json({
+      status: 'healthy',
+      service: 'VietAura Fashion-Tech Ecosystem',
+      version: '1.0.0',
+      uptime_seconds: Math.floor(process.uptime()),
+      gemini_ai_active: Boolean(ai),
+      timestamp: new Date().toISOString(),
+    });
+  });
 
   // ==========================================================================
   // ENDPOINT 1: SOCIAL POSTS HUB — HASHTAG INGESTION & CULTURE GUARD ENGINE
@@ -834,12 +1006,26 @@ async function startServer() {
       enforceExclusiveHashtag,
       isFrom3DApp,
       studioConfig,
+      mediaInfo,
+      hashtags = [],
+      searchQuery,
     } = req.body || {};
+
+    const combinedCaption = [caption, searchQuery, Array.isArray(hashtags) ? hashtags.join(' ') : '']
+      .filter(Boolean)
+      .join(' ');
+
+    const cacheKey = `${url || ''}_${combinedCaption || ''}_${(hashtags || []).join(',')}_${platformHint || ''}`;
+    const cachedResult = socialClassifyCache.get(cacheKey);
+    if (cachedResult) {
+      res.json(cachedResult);
+      return;
+    }
 
     const heuristicResult = classifySocialPostHeuristic({
       url,
       author,
-      caption,
+      caption: combinedCaption || caption,
       platformHint,
       sourceHashtag,
       enforceExclusiveHashtag,
@@ -847,71 +1033,96 @@ async function startServer() {
       studioConfig,
     });
 
-    if (!heuristicResult.ingested) {
-      res.json(heuristicResult);
-      return;
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-      res.json(heuristicResult);
+    const ai = getGeminiClient();
+    if (!ai) {
+      const fallbackPayload = {
+        ...heuristicResult,
+        smart_tags: heuristicResult.tags,
+        ai_spam_score: heuristicResult.moderation?.ai_spam_score || 0.02,
+        culture_guard_status: heuristicResult.culture_guard_status,
+      };
+      socialClassifyCache.set(cacheKey, fallbackPayload);
+      res.json(fallbackPayload);
       return;
     }
 
     try {
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
-      });
-
-      const classifyPrompt = `Phân loại và gắn thẻ bài đăng mạng xã hội sau cho tính năng "SOCIAL POSTS HUB" của ứng dụng Việt Phục Lookbook:
-- URL gốc: "${url || ''}"
+      const classifyPrompt = `Bạn là Trợ lý AI Phân loại & Kiểm duyệt Mạng xã hội chuyên sâu về Cổ phục Việt Nam (VietAura Social Hub).
+Hãy phân tích dữ liệu bài đăng sau:
+- URL / Media Info: "${url || mediaInfo || ''}"
 - Tác giả: "${author || ''}"
 - Nội dung / Caption: "${caption || ''}"
+- Thẻ Hashtags hiện có: "${(hashtags || []).join(', ')}"
 - Gợi ý nền tảng: "${platformHint || ''}"
-- Xuất từ thiết kế 3D trong app: ${Boolean(isFrom3DApp)}
+- Xuất từ ứng dụng 3D: ${Boolean(isFrom3DApp)}
 
-Quy chuẩn bắt buộc:
-1. platform chỉ nhận 1 trong 3 giá trị: "TikTok", "Instagram", "Facebook".
-2. tags BẮT BUỘC là mảng gồm đúng 4 thẻ theo thứ tự:
-   - Platform Tag: "#TikTok" | "#Instagram" | "#Facebook"
-   - Type Tag: "#VietPhucReal" | "#VietPhuc3D"
-   - Outfit Tag: "#AoNguThan" | "#AoNhatBinh" | "#AoTuThan" | "#AoDaiTieuChuan" | "#AoBaBa"
-   - Event/Context Tag: "#DoDiTotNghiep" | "#DoDiChua" | "#DoDiCuoi" | "#KyYeu" | "#DaoPho"`;
+Nhiệm vụ:
+1. Xác định platform: "TikTok" | "Instagram" | "Facebook".
+2. Tạo mảng smart_tags gồm 4 thẻ chuẩn mực:
+   - Platform: "#TikTok" | "#Instagram" | "#Facebook"
+   - Loại hình: "#VietPhucReal" (ảnh thật) hoặc "#VietPhuc3D" (dựng 3D/ảo)
+   - Trang phục: "#AoNguThan" | "#AoNhatBinh" | "#AoTuThan" | "#AoDaiTieuChuan" | "#AoBaBa"
+   - Bối cảnh: "#DoDiTotNghiep" | "#DoDiChua" | "#DoDiCuoi" | "#KyYeu" | "#DaoPho"
+3. Tính toán ai_spam_score: Điểm số từ 0.00 đến 1.00 (thấp hơn 0.3 là bài đăng chất lượng cao về di sản).
+4. Đánh giá culture_guard_status:
+   - "Approved": Tuân thủ trang nghiêm nét đẹp cổ phục truyền thống hoặc phối đồ hợp lệ.
+   - "Warning": Phối đồ phong cách tân thời đường phố (Modern Fusion: kết hợp sneaker/kính mát, chỉ nên dạo phố/cafe).
+   - "Rejected": Vi phạm quy chuẩn nghiêm trọng (ví dụ: mặc hở hang đi lễ chùa, xúc phạm di sản, đồ giả mạo triều phục hoàng đế).
+5. Xác định classified_garment: "ao-ngu-than" | "ao-nhat-binh" | "ao-tu-than" | "ao-dai-ba-ba"`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: classifyPrompt,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              post_id: { type: Type.STRING },
-              platform: { type: Type.STRING },
-              author: { type: Type.STRING },
-              original_url: { type: Type.STRING },
-              tags: { type: Type.ARRAY, items: { type: Type.STRING } },
-              has_re_fit_3d: { type: Type.BOOLEAN },
-              outfit_config_id: { type: Type.STRING },
-              title: { type: Type.STRING },
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: classifyPrompt,
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                post_id: { type: Type.STRING },
+                platform: { type: Type.STRING },
+                author: { type: Type.STRING },
+                original_url: { type: Type.STRING },
+                smart_tags: { type: Type.ARRAY, items: { type: Type.STRING } },
+                ai_spam_score: { type: Type.NUMBER },
+                culture_guard_status: { type: Type.STRING },
+                classified_garment: { type: Type.STRING },
+                has_re_fit_3d: { type: Type.BOOLEAN },
+                outfit_config_id: { type: Type.STRING },
+                title: { type: Type.STRING },
+              },
+              required: [
+                'platform',
+                'smart_tags',
+                'ai_spam_score',
+                'culture_guard_status',
+                'classified_garment',
+              ],
             },
-            required: [
-              'post_id',
-              'platform',
-              'author',
-              'original_url',
-              'tags',
-              'has_re_fit_3d',
-              'outfit_config_id',
-            ],
           },
-        },
-      });
+        }),
+        10000
+      );
 
-      const parsed = JSON.parse((response.text || '{}').trim());
-      res.json({
+      const rawText = response.text;
+      const parsed = JSON.parse((rawText || '{}').trim());
+      const finalSmartTags =
+        Array.isArray(parsed.smart_tags) && parsed.smart_tags.length >= 2
+          ? parsed.smart_tags
+          : heuristicResult.tags;
+      const finalSpamScore =
+        typeof parsed.ai_spam_score === 'number'
+          ? Math.max(0, Math.min(1, parsed.ai_spam_score))
+          : 0.03;
+      const finalGuardStatus =
+        parsed.culture_guard_status === 'Rejected'
+          ? 'Rejected'
+          : parsed.culture_guard_status === 'Warning'
+          ? 'Warning'
+          : 'Approved';
+
+      const finalResponsePayload = {
         ...heuristicResult,
         post_id: parsed.post_id || heuristicResult.post_id,
         platform:
@@ -920,16 +1131,32 @@ Quy chuẩn bắt buộc:
             : heuristicResult.platform,
         author: parsed.author || heuristicResult.author,
         original_url: parsed.original_url || heuristicResult.original_url,
-        tags:
-          Array.isArray(parsed.tags) && parsed.tags.length >= 4
-            ? parsed.tags.slice(0, 4)
-            : heuristicResult.tags,
-        has_re_fit_3d: Boolean(parsed.has_re_fit_3d ?? true),
+        smart_tags: finalSmartTags,
+        tags: finalSmartTags,
+        ai_spam_score: finalSpamScore,
+        culture_guard_status: finalGuardStatus,
+        classified_garment: parsed.classified_garment || heuristicResult.outfitConfig?.garmentId,
+        has_re_fit_3d: Boolean(parsed.has_re_fit_3d ?? heuristicResult.has_re_fit_3d),
         outfit_config_id: parsed.outfit_config_id || heuristicResult.outfit_config_id,
         title: parsed.title || heuristicResult.title,
-      });
+        moderation: {
+          ai_spam_score: finalSpamScore,
+          culture_guard_status: finalGuardStatus === 'Approved' ? 'APPROVED' : finalGuardStatus === 'Warning' ? 'WARNING' : 'REJECTED',
+          admin_approval_status: 'APPROVED',
+        },
+      };
+
+      socialClassifyCache.set(cacheKey, finalResponsePayload);
+      res.json(finalResponsePayload);
     } catch {
-      res.json(heuristicResult);
+      const fallbackResult = {
+        ...heuristicResult,
+        smart_tags: heuristicResult.tags,
+        ai_spam_score: 0.03,
+        culture_guard_status: heuristicResult.culture_guard_status,
+      };
+      socialClassifyCache.set(cacheKey, fallbackResult);
+      res.json(fallbackResult);
     }
   });
 
@@ -937,20 +1164,36 @@ Quy chuẩn bắt buộc:
   // ENDPOINT 2: AI SMART STYLIST ASSISTANT (3 OPTIONS + CULTURE GUARD ENGINE)
   // ==========================================================================
   app.post('/api/advisor/chat', async (req, res) => {
-    const { message, history = [], studioContext, quizInputs } = req.body || {};
+    const { message, history = [], studioContext, quizInputs, language = 'vi' } = req.body || {};
+    const isEn = language === 'en';
 
     if (!message || typeof message !== 'string') {
-      res.status(400).json({ error: 'Vui lòng nhập nội dung câu hỏi hoặc nhu cầu phối đồ.' });
+      res.status(400).json({
+        error: isEn
+          ? 'Please enter your question or styling preferences.'
+          : 'Vui lòng nhập nội dung câu hỏi hoặc nhu cầu phối đồ.',
+      });
       return;
     }
 
-    const baseFallback = buildIntelligentCulturalFallback(message, {
-      ...quizInputs,
-      gender: studioContext?.gender === 'Nam giới' ? 'nam' : quizInputs?.gender,
-    });
+    const baseFallback = buildIntelligentCulturalFallback(
+      message,
+      {
+        ...quizInputs,
+        gender: studioContext?.gender === 'Nam giới' ? 'nam' : quizInputs?.gender,
+      },
+      language
+    );
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    const cacheKey = `${message.trim().toLowerCase()}_${quizInputs?.event || ''}_${quizInputs?.weather || ''}_${quizInputs?.style || ''}_${quizInputs?.budget || ''}_${studioContext?.gender || ''}_${language}`;
+    const cachedAdvisorResult = advisorChatCache.get(cacheKey);
+    if (cachedAdvisorResult && (!history || history.length === 0)) {
+      res.json(cachedAdvisorResult);
+      return;
+    }
+
+    const ai = getGeminiClient();
+    if (!ai) {
       res.json({
         ...baseFallback,
         source: 'cultural-knowledge-engine',
@@ -959,15 +1202,6 @@ Quy chuẩn bắt buộc:
     }
 
     try {
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          },
-        },
-      });
-
       const contextText = studioContext
         ? `\n[Bối cảnh Xưởng Phối Đồ 3D hiện tại: Giới tính=${studioContext.gender}, Trang phục=${studioContext.garmentName}, Bảng màu=${studioContext.paletteName}, Quần/Váy=${studioContext.lowerGarment}, Họa tiết=${studioContext.motif}, Phụ kiện=${(studioContext.accessories || []).join(', ')}, Giày/Guốc=${studioContext.footwear}, Sự kiện=${studioContext.occasion}, Thời tiết=${studioContext.weather}]`
         : '';
@@ -983,87 +1217,94 @@ Quy chuẩn bắt buộc:
             .join('\n')
         : '';
 
+      const languageInstruction = isEn
+        ? `\n\nLANGUAGE SPECIFICATION: Output all overviewText, styleLabel, mainGarment, culturalMeaning, and detailNote in natural, elegant English. STRICT RULE: Keep traditional Vietnamese costume proper nouns in their original Vietnamese names (e.g., "Áo Ngũ Thân", "Áo Nhật Bình", "Áo Tứ Thân", "Áo Dài", "Áo Bà Ba", "Khăn Xếp", "Mấn Đội Đầu", "Nón Quai Thao", "Hài Thêu", "Guốc Mộc"). Never translate them to descriptive terms.`
+        : '';
+
       const fullPrompt = `${historySummary ? `Lịch sử trò chuyện:\n${historySummary}\n\n` : ''}Yêu cầu tư vấn của người dùng: "${message}"${quizText}${contextText}
 
-Hãy phân tích ngữ cảnh và xuất ra CHÍNH XÁC 3 PHƯƠNG ÁN LOOKBOOK 3D TỐI ƯU (part2Options gồm đúng 3 phương án Option 1, Option 2, Option 3) cùng kiểm duyệt Culture Guard (RULE 1: Không phối Nón quai thao với Áo Ngũ Thân nam; RULE 2: Không dùng họa tiết Rồng 5 móng cho thường phục; RULE 3: Không phối Áo Nhật Bình với váy đụp ngắn/quần jeans).`;
+Hãy phân tích ngữ cảnh và xuất ra CHÍNH XÁC 3 PHƯƠNG ÁN LOOKBOOK 3D TỐI ƯU (part2Options gồm đúng 3 phương án Option 1, Option 2, Option 3) cùng kiểm duyệt Culture Guard (RULE 1: Không phối Nón quai thao với Áo Ngũ Thân nam; RULE 2: Không dùng họa tiết Rồng 5 móng cho thường phục; RULE 3: Không phối Áo Nhật Bình với váy đụp ngắn/quần jeans).${languageInstruction}`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: fullPrompt,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              part1Summary: {
-                type: Type.OBJECT,
-                properties: {
-                  event: { type: Type.STRING },
-                  weather: { type: Type.STRING },
-                  style: { type: Type.STRING },
-                  budget: { type: Type.STRING },
-                  overviewText: { type: Type.STRING },
-                },
-                required: ['event', 'weather', 'style', 'budget', 'overviewText'],
-              },
-              part2Options: {
-                type: Type.ARRAY,
-                items: {
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: fullPrompt,
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                part1Summary: {
                   type: Type.OBJECT,
                   properties: {
-                    optionNumber: { type: Type.INTEGER },
-                    outfitName: { type: Type.STRING },
-                    styleLabel: { type: Type.STRING },
-                    budgetTier: { type: Type.STRING },
-                    mainGarment: { type: Type.STRING },
-                    accessories: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    palette: {
-                      type: Type.ARRAY,
-                      items: {
-                        type: Type.OBJECT,
-                        properties: {
-                          name: { type: Type.STRING },
-                          hex: { type: Type.STRING },
-                          role: { type: Type.STRING },
-                        },
-                        required: ['name', 'hex', 'role'],
-                      },
-                    },
-                    culturalMeaning: { type: Type.STRING },
-                    garmentId: { type: Type.STRING },
-                    paletteId: { type: Type.STRING },
-                    lowerGarmentId: { type: Type.STRING },
-                    accessoryIds: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    footwearId: { type: Type.STRING },
+                    event: { type: Type.STRING },
+                    weather: { type: Type.STRING },
+                    style: { type: Type.STRING },
+                    budget: { type: Type.STRING },
+                    overviewText: { type: Type.STRING },
                   },
-                  required: [
-                    'optionNumber',
-                    'outfitName',
-                    'styleLabel',
-                    'budgetTier',
-                    'mainGarment',
-                    'accessories',
-                    'palette',
-                    'culturalMeaning',
-                    'garmentId',
-                  ],
+                  required: ['event', 'weather', 'style', 'budget', 'overviewText'],
+                },
+                part2Options: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      optionNumber: { type: Type.INTEGER },
+                      outfitName: { type: Type.STRING },
+                      styleLabel: { type: Type.STRING },
+                      budgetTier: { type: Type.STRING },
+                      mainGarment: { type: Type.STRING },
+                      accessories: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      palette: {
+                        type: Type.ARRAY,
+                        items: {
+                          type: Type.OBJECT,
+                          properties: {
+                            name: { type: Type.STRING },
+                            hex: { type: Type.STRING },
+                            role: { type: Type.STRING },
+                          },
+                          required: ['name', 'hex', 'role'],
+                        },
+                      },
+                      culturalMeaning: { type: Type.STRING },
+                      garmentId: { type: Type.STRING },
+                      paletteId: { type: Type.STRING },
+                      lowerGarmentId: { type: Type.STRING },
+                      accessoryIds: { type: Type.ARRAY, items: { type: Type.STRING } },
+                      footwearId: { type: Type.STRING },
+                    },
+                    required: [
+                      'optionNumber',
+                      'outfitName',
+                      'styleLabel',
+                      'budgetTier',
+                      'mainGarment',
+                      'accessories',
+                      'palette',
+                      'culturalMeaning',
+                      'garmentId',
+                    ],
+                  },
+                },
+                part3CultureGuard: {
+                  type: Type.OBJECT,
+                  properties: {
+                    hasViolation: { type: Type.BOOLEAN },
+                    violatedRule: { type: Type.STRING },
+                    detailNote: { type: Type.STRING },
+                  },
+                  required: ['hasViolation', 'detailNote'],
                 },
               },
-              part3CultureGuard: {
-                type: Type.OBJECT,
-                properties: {
-                  hasViolation: { type: Type.BOOLEAN },
-                  violatedRule: { type: Type.STRING },
-                  detailNote: { type: Type.STRING },
-                },
-                required: ['hasViolation', 'detailNote'],
-              },
+              required: ['part1Summary', 'part2Options', 'part3CultureGuard'],
             },
-            required: ['part1Summary', 'part2Options', 'part3CultureGuard'],
           },
-        },
-      });
+        }),
+        12000
+      );
 
       const rawText = response.text;
       if (!rawText) throw new Error('Empty response from Gemini');
@@ -1114,7 +1355,11 @@ Hãy phân tích ngữ cảnh và xuất ra CHÍNH XÁC 3 PHƯƠNG ÁN LOOKBOOK 
       const part3CultureGuard = {
         status: (hasViolation ? 'Warning' : 'Approved') as 'Approved' | 'Warning',
         statusLabel: hasViolation
-          ? '🔴 Cảnh báo (Cần điều chỉnh)'
+          ? isEn
+            ? '🔴 Warning (Adjustment Needed)'
+            : '🔴 Cảnh báo (Cần điều chỉnh)'
+          : isEn
+          ? '🟢 Approved (Heritage Compliant)'
           : '🟢 Đã kiểm duyệt (Approved)',
         hasViolation,
         violatedRule:
@@ -1137,12 +1382,13 @@ Hãy phân tích ngữ cảnh và xuất ra CHÍNH XÁC 3 PHƯƠNG ÁN LOOKBOOK 
       const formattedMarkdownReport = formatMandatoryStylistResponse(
         part1Summary,
         mergedOptions,
-        part3CultureGuard
+        part3CultureGuard,
+        language
       );
 
       const primaryOpt = mergedOptions[0];
 
-      res.json({
+      const successResponse = {
         replyIntro: part1Summary.overviewText,
         part1Summary,
         part2Options: mergedOptions,
@@ -1160,7 +1406,10 @@ Hãy phân tích ngữ cảnh và xuất ra CHÍNH XÁC 3 PHƯƠNG ÁN LOOKBOOK 
           garmentId: primaryOpt.outfitConfigCode.garmentId,
         },
         source: 'gemini-3.8-flash',
-      });
+      };
+
+      advisorChatCache.set(cacheKey, successResponse);
+      res.json(successResponse);
     } catch (error) {
       console.error('Gemini Stylist fallback triggered:', error);
       res.json({
@@ -1227,22 +1476,21 @@ Hãy phân tích ngữ cảnh và xuất ra CHÍNH XÁC 3 PHƯƠNG ÁN LOOKBOOK 
       encoded_payload: basePackage?.encoded_payload,
     };
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    const cacheKey = `${garmentName}_${gender}_${primaryHex}_${secondaryHex}_${accentHex}_${contextLabel}_${accessories.join(',')}`;
+    const cachedLookbook = lookbookGenCache.get(cacheKey);
+    if (cachedLookbook) {
+      res.json(cachedLookbook);
+      return;
+    }
+
+    const ai = getGeminiClient();
+    if (!ai) {
+      lookbookGenCache.set(cacheKey, defaultResult);
       res.json(defaultResult);
       return;
     }
 
     try {
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          },
-        },
-      });
-
       const prompt = `Hãy đóng gói thẻ Lookbook Việt Phục cho cấu hình sau:
 - Trang phục: ${garmentName} (${gender === 'nam' ? 'Nam' : 'Nữ'})
 - Mã màu HEX: Áo ngoài ${primaryHex}, Áo lót/Quần ${secondaryHex}, Phụ kiện ${accentHex}
@@ -1254,39 +1502,42 @@ Hãy tạo:
 2. palette_colors: Mảng 3 màu gồm hex và name (tên màu Đông Phương tinh tế).
 3. cultural_note: 1-2 câu cô đọng giải thích nguồn gốc, cấu trúc cắt may và ý nghĩa văn hóa của bộ trang phục.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              palette_colors: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    hex: { type: Type.STRING },
-                    name: { type: Type.STRING },
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: prompt,
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING },
+                palette_colors: {
+                  type: Type.ARRAY,
+                  items: {
+                    type: Type.OBJECT,
+                    properties: {
+                      hex: { type: Type.STRING },
+                      name: { type: Type.STRING },
+                    },
+                    required: ['hex', 'name'],
                   },
-                  required: ['hex', 'name'],
                 },
+                cultural_note: { type: Type.STRING },
               },
-              cultural_note: { type: Type.STRING },
+              required: ['title', 'palette_colors', 'cultural_note'],
             },
-            required: ['title', 'palette_colors', 'cultural_note'],
           },
-        },
-      });
+        }),
+        10000
+      );
 
       const rawText = response.text;
       if (!rawText) throw new Error('Empty Gemini response');
       const parsed = JSON.parse(rawText.trim());
 
-      res.json({
+      const finalResult = {
         ...defaultResult,
         title: parsed.title || defaultResult.title,
         palette_colors:
@@ -1298,8 +1549,12 @@ Hãy tạo:
               }))
             : defaultResult.palette_colors,
         cultural_note: parsed.cultural_note || defaultResult.cultural_note,
-      });
+      };
+
+      lookbookGenCache.set(cacheKey, finalResult);
+      res.json(finalResult);
     } catch {
+      lookbookGenCache.set(cacheKey, defaultResult);
       res.json(defaultResult);
     }
   });
@@ -1315,127 +1570,208 @@ Hãy tạo:
       return;
     }
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
+    const cacheKey = `${localComparison.outfit_a?.id || 'A'}_${localComparison.outfit_b?.id || 'B'}_${userContext}`;
+    const cachedCompare = lookbookCompareCache.get(cacheKey);
+    if (cachedCompare) {
+      res.json(cachedCompare);
+      return;
+    }
+
+    const ai = getGeminiClient();
+    if (!ai) {
+      lookbookCompareCache.set(cacheKey, localComparison);
       res.json(localComparison);
       return;
     }
 
     try {
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          },
-        },
-      });
-
       const prompt = `So sánh thực tiễn 2 bộ Lookbook Việt Phục sau đây cho nhu cầu "${userContext}":
 - BỘ A: "${localComparison.outfit_a?.title}" (${localComparison.outfit_a?.mainGarment}) · Chi tiết tiêu chí: ${JSON.stringify(localComparison.criteria_rows)}
 - BỘ B: "${localComparison.outfit_b?.title}" (${localComparison.outfit_b?.mainGarment})
 
 Hãy đưa ra nhận định thực tiễn ngắn gọn (2-3 câu) đối chiếu mức độ phù hợp văn hóa, chi phí thị trường, độ cồng kềnh ảnh hưởng tới trải nghiệm mặc cho nhu cầu "${userContext}" và chọn ID bộ phù hợp hơn.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              ai_short_advice: { type: Type.STRING },
-              recommended_outfit_id: { type: Type.STRING },
+      const response = await withTimeout(
+        ai.models.generateContent({
+          model: 'gemini-3.8-flash',
+          contents: prompt,
+          config: {
+            systemInstruction: SYSTEM_INSTRUCTION,
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                ai_short_advice: { type: Type.STRING },
+                recommended_outfit_id: { type: Type.STRING },
+              },
+              required: ['ai_short_advice', 'recommended_outfit_id'],
             },
-            required: ['ai_short_advice', 'recommended_outfit_id'],
           },
-        },
-      });
+        }),
+        10000
+      );
 
       const rawText = response.text;
       if (!rawText) throw new Error('Empty Gemini comparison response');
       const parsed = JSON.parse(rawText.trim());
 
-      res.json({
+      const finalComparisonResult = {
         ...localComparison,
         ai_short_advice: parsed.ai_short_advice || localComparison.ai_short_advice,
         recommended_outfit_id:
           parsed.recommended_outfit_id === localComparison.outfit_b?.id
             ? localComparison.outfit_b.id
             : localComparison.outfit_a?.id,
-      });
+      };
+
+      lookbookCompareCache.set(cacheKey, finalComparisonResult);
+      res.json(finalComparisonResult);
     } catch {
+      lookbookCompareCache.set(cacheKey, localComparison);
       res.json(localComparison);
     }
   });
 
   // ==========================================================================
-  // ENDPOINT 5: BẢN ĐỒ DI TÍCH & HỘ CHIẾU CỔ PHỤC (GOOGLE MAPS LITE ENGINE)
+  // ENDPOINT 5: BẢN ĐỒ DI TÍCH & HỘ CHIẾU CỔ PHỤC (GEMINI VISION + GPS CHECK-IN)
   // ==========================================================================
   app.post('/api/heritage-map/checkin', async (req, res) => {
-    const { site, outfitChosen, locationVerified, localEvaluation } = req.body || {};
+    const {
+      site,
+      outfitChosen,
+      locationVerified,
+      userCoords,
+      siteCoords,
+      distanceMeters,
+      photoBase64,
+      isOfflinePending,
+      offlineTimestamp,
+      localEvaluation,
+    } = req.body || {};
 
-    if (!localEvaluation) {
-      res.status(400).json({ error: 'Thiếu dữ liệu check-in địa danh di tích.' });
-      return;
-    }
+    const resolvedSiteName = site?.site_name || 'Di tích lịch sử';
+    const resolvedPoints = site?.points_awarded || 200;
+    const resolvedStampName = site?.stamp_name || 'Con Dấu Di Tích';
+    const resolvedBadge = site?.badge_earned || 'Người Yêu Di Sản';
+    const resolvedDistance = typeof distanceMeters === 'number' ? distanceMeters : 120;
+    const isGpsInRange = resolvedDistance <= 500 || Boolean(locationVerified);
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY') {
-      res.json(localEvaluation);
-      return;
-    }
+    let cultureGuardStatus: 'APPROVED' | 'WARNING' | 'REJECTED' = 'APPROVED';
+    let outfitDetected = outfitChosen || 'Áo Ngũ Thân Lập Lĩnh';
+    let etiquetteCompliant = true;
+    let feedbackMessage = `Chúc mừng bạn đã check-in thành công tại ${resolvedSiteName} trong trang phục ${outfitDetected}!`;
 
-    try {
-      const ai = new GoogleGenAI({
-        apiKey,
-        httpOptions: {
-          headers: {
-            'User-Agent': 'aistudio-build',
-          },
-        },
-      });
+    const ai = getGeminiClient();
 
-      const prompt = `Kiểm duyệt check-in mở khóa Con Dấu Di Sản 3D cho ứng dụng Việt Phục Lookbook:
-- Địa danh Google Maps Lite: "${site?.location_query || ''}" (Vùng: ${site?.region || 'MIEN_BAC'}, Không gian thờ tự tâm linh: ${Boolean(site?.isSacredSite)})
-- Xác thực vị trí tại di tích: ${Boolean(locationVerified)}
-- Trang phục người dùng chọn: "${outfitChosen}"
-- Trạng thái kiểm duyệt sơ bộ: "${localEvaluation.stamp_unlock_result?.culture_guard_status}"
+    if (ai && photoBase64 && typeof photoBase64 === 'string') {
+      try {
+        let mimeType = 'image/jpeg';
+        let cleanBase64 = photoBase64;
+        const match = photoBase64.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) {
+          mimeType = match[1];
+          cleanBase64 = match[2];
+        }
 
-Hãy viết lời phản hồi "message" (1-2 câu tinh tế, truyền cảm hứng văn hóa lịch sử cho giới trẻ) phù hợp với trạng thái "${localEvaluation.stamp_unlock_result?.culture_guard_status}".`;
+        const visionPrompt = `Bạn là Chuyên gia Giám định Văn hóa & Thị giác AI (Culture Guard Vision AI) cho ứng dụng di sản Việt Nam VietAura.
+Hãy phân tích bức ảnh check-in người dùng vừa gửi tại di tích: "${resolvedSiteName}" (Địa danh: "${site?.location_query || ''}", Không gian tôn nghiêm/thờ tự: ${Boolean(site?.isSacredSite)}).
+Trang phục người dùng khai báo diện: "${outfitChosen}".
+Khoảng cách GPS ghi nhận: ${Math.round(resolvedDistance)}m.
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: prompt,
-        config: {
-          systemInstruction: SYSTEM_INSTRUCTION,
-          responseMimeType: 'application/json',
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              message: { type: Type.STRING },
+Nhiệm vụ kiểm định thị giác:
+1. culture_guard_status:
+   - "APPROVED": Nếu người trong ảnh mặc trang phục truyền thống Việt Nam (Áo Ngũ Thân, Áo Nhật Bình, Áo Tứ Thân, Áo Dài, Áo Bà Ba, hoặc cổ phục cách tân kín đáo, lịch sự) phù hợp không gian di tích.
+   - "WARNING": Nếu trang phục có phối phụ kiện hiện đại (sneaker, kính râm, streetwear) nhưng vẫn giữ được nét nhã nhặn tôn nghiêm.
+   - "REJECTED": Nếu trang phục phản cảm, hở hang (áo sát nách, váy quá ngắn tại nơi thờ tự), trang phục giả mạo triều phục hoàng đế sai lệch, hoặc ảnh hoàn toàn không liên quan đến con người/trang phục.
+2. outfit_detected: Tên dạng cổ phục nhận diện được trong ảnh (ví dụ: "Áo Ngũ Thân Lập Lĩnh", "Áo Nhật Bình", "Áo Tứ Thân & Yếm Đào", "Áo Dài Truyền Thống", "Áo Bà Ba", "Trang phục thường nhật").
+3. etiquette_compliant: boolean (Có tuân thủ quy tắc trang phục và ứng xử tại di tích không).
+4. feedback_message: Lời nhận xét tinh tế (1-2 câu), truyền cảm hứng tự hào lịch sử cho giới trẻ, nêu rõ lý do nếu cảnh báo hoặc từ chối.`;
+
+        const response = await withTimeout(
+          ai.models.generateContent({
+            model: 'gemini-3.8-flash',
+            contents: {
+              parts: [
+                {
+                  inlineData: {
+                    mimeType,
+                    data: cleanBase64,
+                  },
+                },
+                { text: visionPrompt },
+              ],
             },
-            required: ['message'],
-          },
-        },
-      });
+            config: {
+              systemInstruction: SYSTEM_INSTRUCTION,
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  culture_guard_status: { type: Type.STRING },
+                  outfit_detected: { type: Type.STRING },
+                  etiquette_compliant: { type: Type.BOOLEAN },
+                  feedback_message: { type: Type.STRING },
+                },
+                required: ['culture_guard_status', 'outfit_detected', 'etiquette_compliant', 'feedback_message'],
+              },
+            },
+          }),
+          12000
+        );
 
-      const rawText = response.text;
-      if (!rawText) throw new Error('Empty Gemini checkin response');
-      const parsed = JSON.parse(rawText.trim());
-
-      res.json({
-        ...localEvaluation,
-        stamp_unlock_result: {
-          ...localEvaluation.stamp_unlock_result,
-          message: parsed.message || localEvaluation.stamp_unlock_result.message,
-        },
-      });
-    } catch {
-      res.json(localEvaluation);
+        const rawText = response.text;
+        if (rawText) {
+          const parsed = JSON.parse(rawText.trim());
+          if (parsed.culture_guard_status === 'REJECTED' || parsed.culture_guard_status === 'Rejected') {
+            cultureGuardStatus = 'REJECTED';
+          } else if (parsed.culture_guard_status === 'WARNING' || parsed.culture_guard_status === 'Warning') {
+            cultureGuardStatus = 'WARNING';
+          } else {
+            cultureGuardStatus = 'APPROVED';
+          }
+          outfitDetected = parsed.outfit_detected || outfitDetected;
+          etiquetteCompliant = Boolean(parsed.etiquette_compliant);
+          feedbackMessage = parsed.feedback_message || feedbackMessage;
+        }
+      } catch (err) {
+        console.warn('Gemini Vision checkin fallback triggered:', err);
+      }
     }
+
+    // Eligibility check: GPS in range (<=500m or offline mode) AND Culture Guard status is APPROVED
+    const canUnlock = (isGpsInRange || Boolean(isOfflinePending)) && cultureGuardStatus === 'APPROVED';
+
+    let finalMessage = feedbackMessage;
+    if (!isGpsInRange && !isOfflinePending) {
+      finalMessage = `Bạn đang cách ${resolvedSiteName} ${Math.round(resolvedDistance)}m (vượt quá bán kính quy định 500m). Vui lòng di chuyển đến gần di tích hoặc kích hoạt chế độ "Ngoại tuyến (Lưu tạm)" để xác thực sau!`;
+    } else if (cultureGuardStatus === 'REJECTED') {
+      finalMessage = `Kiểm duyệt Culture Guard: Ảnh chưa đạt chuẩn cổ phục tôn nghiêm tại ${resolvedSiteName}. ${feedbackMessage}`;
+    }
+
+    res.json({
+      ...localEvaluation,
+      is_unlocked: canUnlock,
+      stamp_id: site?.stamp_id || 'STAMP_HERITAGE_01',
+      stamp_name: resolvedStampName,
+      points_awarded: canUnlock ? resolvedPoints : 0,
+      badge_earned: canUnlock ? resolvedBadge : null,
+      culture_guard_status: cultureGuardStatus,
+      outfit_detected: outfitDetected,
+      etiquette_compliant: etiquetteCompliant,
+      gps_in_range: isGpsInRange,
+      distance_meters: Math.round(resolvedDistance),
+      is_offline_pending: Boolean(isOfflinePending),
+      offline_timestamp: offlineTimestamp || null,
+      stamp_unlock_result: {
+        is_unlocked: canUnlock,
+        stamp_id: site?.stamp_id || 'STAMP_HERITAGE_01',
+        stamp_name: resolvedStampName,
+        points_awarded: canUnlock ? resolvedPoints : 0,
+        badge_earned: canUnlock ? resolvedBadge : null,
+        culture_guard_status: cultureGuardStatus,
+        message: finalMessage,
+      },
+    });
   });
 
   // ==========================================================================
@@ -1508,11 +1844,33 @@ Hãy viết lời phản hồi "message" (1-2 câu tinh tế, truyền cảm h�
     vite.warmupRequest('/src/utils/anatomicalHuman3D.ts').catch(() => {});
   } else {
     const distPath = path.resolve(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    app.use(
+      express.static(distPath, {
+        maxAge: '1d',
+        setHeaders: (response, filePath) => {
+          if (filePath.endsWith('.html')) {
+            response.setHeader('Cache-Control', 'no-cache, must-revalidate');
+          } else if (/\.(js|css|glb|png|jpg|jpeg|webp|svg|woff2)$/i.test(filePath)) {
+            response.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        },
+      })
+    );
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
+
+  // Centralized Global Error Handler
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('VietAura Server Error:', err);
+    if (!res.headersSent) {
+      res.status(500).json({
+        error: 'Đã có lỗi phát sinh từ máy chủ.',
+        message: err?.message || 'Internal Server Error',
+      });
+    }
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Việt Phục Lookbook server listening on http://0.0.0.0:${PORT}`);

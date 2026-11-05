@@ -44,6 +44,7 @@ import {
 import { LookbookCardView } from './LookbookCardView';
 import { MiniLookbookDrawer } from './MiniLookbookDrawer';
 import { LookbookStudioModal } from './LookbookStudioModal';
+import { AppLanguage, TRANSLATIONS, getLocalizedGarmentName } from '../utils/i18n';
 
 export interface AdvisorMessage {
   id: string;
@@ -99,6 +100,7 @@ interface CulturalAdvisorSectionProps {
   externalPromptTrigger: { id: number; prompt: string } | null;
   userMeasurements?: UserAnthropometricMeasurements;
   externalSendMeasurementsTrigger?: number | null;
+  language?: AppLanguage;
 }
 
 const INITIAL_CONSULTATION: StylistConsultationResponse = {
@@ -247,6 +249,152 @@ const INITIAL_MESSAGES: AdvisorMessage[] = [
   },
 ];
 
+const INITIAL_CONSULTATION_EN: StylistConsultationResponse = {
+  part1Summary: {
+    event: 'Graduation Ceremony',
+    weather: 'Autumn / Cool',
+    style: 'Traditional Formal',
+    budget: 'Student Friendly',
+    overviewText:
+      '3 recommended 3D Lookbook options for Hanoi Autumn Graduation in traditional formal style, optimized for student budgets.',
+  },
+  part2Options: [
+    {
+      optionNumber: 1,
+      outfitName: 'Khuê Văn Intellect — Áo Ngũ Thân Tay Chẽn',
+      styleLabel: 'Traditional Formal',
+      budgetTier: 'Student Friendly',
+      mainGarment:
+        'Áo Ngũ Thân Tay Chẽn in Jade Cyan raw silk, ivory standing collar inner shirt paired with wide-leg white silk trousers.',
+      accessories: ['Matching Khăn Xếp', 'Traditional Guốc Mộc', 'Agarwood folding fan'],
+      palette: [
+        { name: 'Jade Cyan', hex: '#2E8B57', role: 'Outer robe' },
+        { name: 'Ivory White', hex: '#FFFFF0', role: 'Inner & Trousers' },
+        { name: 'Agarwood', hex: '#8B4513', role: 'Guốc & Fan' },
+      ],
+      culturalMeaning:
+        'Standardized in 1744; the 5 panels symbolize parents protecting their child, and the 5 buttons embody the Five Constant Virtues (Benevolence, Righteousness, Propriety, Wisdom, Fidelity).',
+      outfitConfigCode: {
+        config_id: 'CFG_OPT1_NGUTHAN_NU',
+        gender: 'nu',
+        garmentId: 'ao-ngu-than',
+        paletteId: 'khue-van-tri-thuc',
+        lowerGarmentId: 'quan-lua-trang',
+        motifId: 'am-hoa-tron',
+        accessoryIds: ['khan-xep', 'quat-tram-huong'],
+        footwearId: 'guoc-go-moc',
+        occasionId: 'tot-nghiep',
+        weatherId: 'thu-ha-noi',
+        outerHex: '#2E8B57',
+        innerHex: '#FFFFF0',
+        lowerHex: '#FFFFF0',
+      },
+    },
+    {
+      optionNumber: 2,
+      outfitName: 'Thanh Phong Classic Indigo — Áo Ngũ Thân',
+      styleLabel: 'Minimalist & Elegant',
+      budgetTier: 'Standard',
+      mainGarment:
+        'Áo Ngũ Thân in Nha Xá silk in Classic Indigo with subtle woven Lotus motifs, worn over white inner shirt and natural ivory silk trousers.',
+      accessories: ['Deep indigo Khăn Xếp', 'Bamboo rib folding fan', 'Minimalist Guốc Mộc'],
+      palette: [
+        { name: 'Classic Indigo', hex: '#1E3A8A', role: 'Outer robe' },
+        { name: 'Bamboo Green', hex: '#4D7C0F', role: 'Accent' },
+        { name: 'Silk Ivory', hex: '#F5F5DC', role: 'Inner & Trousers' },
+      ],
+      culturalMeaning:
+        'Faithfully preserves Emperor Minh Mạng era 5-button collar regulations in calm indigo tones, honoring youthful intellectual elegance.',
+      outfitConfigCode: {
+        config_id: 'CFG_OPT2_THANHPHONG_NU',
+        gender: 'nu',
+        garmentId: 'ao-ngu-than',
+        paletteId: 'thanh-phong-nien-hoa',
+        lowerGarmentId: 'quan-lua-trang',
+        motifId: 'tu-quy-lien-hoa',
+        accessoryIds: ['khan-xep', 'quat-tram-huong'],
+        footwearId: 'guoc-go-moc',
+        occasionId: 'tot-nghiep',
+        weatherId: 'thu-ha-noi',
+        outerHex: '#1E3A8A',
+        innerHex: '#F5F5DC',
+        lowerHex: '#F5F5DC',
+      },
+    },
+    {
+      optionNumber: 3,
+      outfitName: 'Chu Sa Imperial Garden — Áo Nhật Bình Royal Attire',
+      styleLabel: 'Regal & Magnificent',
+      budgetTier: 'Luxury',
+      mainGarment:
+        'Áo Nhật Bình in Cinnabar Red silk brocade embroidered with Phoenix, wide sleeves bordered with Five Elements bands, paired with White Jade silk trousers.',
+      accessories: ['Imperial Mấn Đội Đầu', 'Engraved silver bangles', 'Curved-toe Hài Thêu'],
+      palette: [
+        { name: 'Cinnabar Red', hex: '#9A3412', role: 'Áo Nhật Bình' },
+        { name: 'Imperial Gold', hex: '#D97706', role: 'Five elements border' },
+        { name: 'White Jade', hex: '#FAF8F5', role: 'Silk trousers' },
+      ],
+      culturalMeaning:
+        'Everyday attire for Imperial Empresses and Princesses during the Nguyễn Dynasty; dignified rectangular collar with Five Elements bands on sleeves.',
+      outfitConfigCode: {
+        config_id: 'CFG_OPT3_NHATBINH_NU',
+        gender: 'nu',
+        garmentId: 'ao-nhat-binh',
+        paletteId: 'chu-sa-ngu-uyen',
+        lowerGarmentId: 'quan-lua-trang',
+        motifId: 'phuong-vu-bat-buu',
+        accessoryIds: ['man-doi-dau', 'xuyen-bac'],
+        footwearId: 'hai-theu',
+        occasionId: 'tot-nghiep',
+        weatherId: 'thu-ha-noi',
+        outerHex: '#9A3412',
+        innerHex: '#D97706',
+        lowerHex: '#FAF8F5',
+      },
+    },
+  ],
+  part3CultureGuard: {
+    status: 'Approved',
+    statusLabel: '🟢 Approved (Heritage Compliant)',
+    hasViolation: false,
+    violatedRule: null,
+    detailNote:
+      'All 3 options strictly adhere to ancient dress codes: Gender-appropriate accessories (Rule 1), Rank-appropriate motifs without 5-claw dragons (Rule 2), Coordinated wide-leg silk trousers & Guốc Mộc (Rule 3).',
+  },
+  formattedMarkdownReport: `----------------------------------------------------------------------
+[PART 1: AI STYLIST CONTEXT & ANALYSIS]
+• Occasion: Graduation Ceremony · Weather: Autumn / Cool · Style: Traditional Formal · Budget: Student Friendly
+• Overview: 3 recommended 3D Lookbook options for Hanoi Autumn Graduation in traditional formal style, optimized for student budgets.
+
+[PART 2: 3 RECOMMENDED 3D LOOKBOOK OPTIONS]
+
+🌟 OPTION 1: "Khuê Văn Intellect — Áo Ngũ Thân Tay Chẽn"
+• Main Garment: Áo Ngũ Thân Tay Chẽn in Jade Cyan raw silk, ivory standing collar inner shirt paired with wide-leg white silk trousers.
+• Standard Accessories: Matching Khăn Xếp, Traditional Guốc Mộc, Agarwood folding fan
+• Color Palette: Jade Cyan (#2E8B57 - Outer robe) · Ivory White (#FFFFF0 - Inner & Trousers) · Agarwood (#8B4513 - Guốc & Fan)
+• Cultural & Historical Meaning: Standardized in 1744; 5 panels symbolize parents protecting their child, and 5 buttons embody the Five Constant Virtues (Benevolence, Righteousness, Propriety, Wisdom, Fidelity).
+• 3D Outfit Config Code: {"config_id":"CFG_OPT1_NGUTHAN_NU","gender":"nu","garmentId":"ao-ngu-than","paletteId":"khue-van-tri-thuc","lowerGarmentId":"quan-lua-trang","motifId":"am-hoa-tron","accessoryIds":["khan-xep","quat-tram-huong"],"footwearId":"guoc-go-moc","occasionId":"tot-nghiep","weatherId":"thu-ha-noi","outerHex":"#2E8B57","innerHex":"#FFFFF0","lowerHex":"#FFFFF0"}
+----------------------------------------------------------------------`,
+  lookbookCard: CURATED_LOOKBOOKS[0],
+};
+
+const INITIAL_MESSAGES_EN: AdvisorMessage[] = [
+  {
+    id: 'msg-few-shot-user',
+    role: 'user',
+    text: 'Suggest traditional Vietnamese attire for Hanoi autumn graduation photos, formal and student budget?',
+    timestamp: 'Sample query',
+  },
+  {
+    id: 'msg-few-shot-assistant',
+    role: 'assistant',
+    text: INITIAL_CONSULTATION_EN.part1Summary.overviewText,
+    lookbookCard: CURATED_LOOKBOOKS[0],
+    consultation: INITIAL_CONSULTATION_EN,
+    timestamp: 'AI Stylist',
+  },
+];
+
 const INITIAL_DIRECT_THREADS: MessagingThread[] = [
   {
     id: 'tailor-y-van-hien',
@@ -383,7 +531,143 @@ const INITIAL_DIRECT_THREADS: MessagingThread[] = [
   },
 ];
 
-const QUICK_PROMPTS = [
+const INITIAL_DIRECT_THREADS_EN: MessagingThread[] = [
+  {
+    id: 'tailor-y-van-hien',
+    name: 'Ỷ Vân Hiên',
+    handle: '@yvanhien.atelier',
+    category: 'tailor_business',
+    roleBadge: 'Tailoring & Rental',
+    avatarText: 'Ỷ',
+    online: true,
+    locationAddress: '36 Hang Gai, Hoan Kiem, Hanoi',
+    specialty: '3D Custom Tailoring & Rental of Áo Ngũ Thân, Áo Nhật Bình',
+    unreadCount: 1,
+    messages: [
+      {
+        id: 'yvh-1',
+        sender: 'them',
+        text: 'Hello! Ỷ Vân Hiên has ready-to-wear Nha Xá silk Áo Ngũ Thân Tay Chẽn for the graduation & yearbook season (from 250,000 VND/day).',
+        timestamp: '09:15',
+      },
+      {
+        id: 'yvh-2',
+        sender: 'them',
+        text: 'You can send your 3D measurements or attach the outfit you are trying in the 3D Fitting Room for a tailored quote or rental reservation!',
+        timestamp: '09:16',
+      },
+    ],
+  },
+  {
+    id: 'tailor-hoang-cung-hue',
+    name: 'Huế Imperial Costumes',
+    handle: '@hoangcunghue.tailor',
+    category: 'tailor_business',
+    roleBadge: 'Imperial Atelier',
+    avatarText: 'H',
+    online: true,
+    locationAddress: '23 Le Huan, Thuan Hoa, Hue City',
+    specialty: 'Specializes in hand-embroidered Áo Nhật Bình & gilded Mấn',
+    messages: [
+      {
+        id: 'hch-1',
+        sender: 'me',
+        text: 'Hello, how long does it take to tailor a Cinnabar Red Áo Nhật Bình according to 3D measurements?',
+        timestamp: 'Yesterday',
+      },
+      {
+        id: 'hch-2',
+        sender: 'them',
+        text: 'With embroidered silk Áo Nhật Bình made to custom 3D measurements, our atelier completes in 7–10 days. If urgent, we also have standard sizes ready for rental.',
+        timestamp: 'Yesterday',
+      },
+    ],
+  },
+  {
+    id: 'tailor-dong-phong',
+    name: 'Đông Phong Studio',
+    handle: '@dongphong.saigon',
+    category: 'tailor_business',
+    roleBadge: 'Tailoring & Rental',
+    avatarText: 'Đ',
+    online: false,
+    locationAddress: '115 Nguyen Thai Binh, District 1, HCMC',
+    specialty: 'Áo Ngũ Thân, Áo Tứ Thân & Heritage Attire',
+    messages: [
+      {
+        id: 'dp-1',
+        sender: 'them',
+        text: 'Đông Phong Studio has just updated our new raw silk color palette. Feel free to message us for rental sizing or custom tailoring advice!',
+        timestamp: 'Tuesday',
+      },
+    ],
+  },
+  {
+    id: 'user-linh-chi',
+    name: 'Linh Chi',
+    handle: '@linhchi.cophuc',
+    category: 'user_account',
+    roleBadge: 'Member',
+    avatarText: 'L',
+    online: true,
+    unreadCount: 1,
+    messages: [
+      {
+        id: 'lc-1',
+        sender: 'me',
+        text: 'Chi, the Jade Cyan Áo Ngũ Thân you wore for graduation photos at Temple of Literature was stunning!',
+        timestamp: '10:20',
+      },
+      {
+        id: 'lc-2',
+        sender: 'them',
+        text: 'Thank you! I attached the 3D outfit config below, you can click Try 3D to fit it directly on your avatar!',
+        timestamp: '10:22',
+        attached3DOutfit: {
+          title: 'Khuê Văn Intellect — Áo Ngũ Thân Tay Chẽn',
+          subtitle: 'Jade Cyan (#2E8B57) · White silk trousers',
+          config: INITIAL_CONSULTATION.part2Options[0].outfitConfigCode,
+        },
+      },
+    ],
+  },
+  {
+    id: 'user-minh-khoi',
+    name: 'Minh Khôi',
+    handle: '@minhkhoi.heritage',
+    category: 'user_account',
+    roleBadge: 'Member',
+    avatarText: 'M',
+    online: false,
+    messages: [
+      {
+        id: 'mk-1',
+        sender: 'them',
+        text: 'This weekend our group has an Áo Ngũ Thân heritage photography session at the Imperial Citadel. Join us if you are free!',
+        timestamp: '2d ago',
+      },
+    ],
+  },
+  {
+    id: 'user-bao-tram',
+    name: 'Bảo Trâm Analog',
+    handle: '@baotram.analog',
+    category: 'user_account',
+    roleBadge: 'Photographer',
+    avatarText: 'B',
+    online: true,
+    messages: [
+      {
+        id: 'bt-1',
+        sender: 'them',
+        text: 'When shooting traditional costumes on film, aim for 15:30–17:00 golden hour to capture the silk sheen at its finest.',
+        timestamp: '3d ago',
+      },
+    ],
+  },
+];
+
+const QUICK_PROMPTS_VI = [
   {
     label: 'Tốt nghiệp thu Hà Nội',
     prompt:
@@ -422,6 +706,47 @@ const QUICK_PROMPTS = [
   },
 ];
 
+const QUICK_PROMPTS_EN = [
+  {
+    label: 'Hanoi Autumn Graduation',
+    prompt:
+      'I am looking for traditional Vietnamese attire for graduation photos in Hanoi during autumn, both formal and student budget-friendly. What should I choose?',
+    isCultureGuardTest: false,
+  },
+  {
+    label: 'Quan Họ Spring Festival',
+    prompt:
+      'I am a woman and want to wear heritage costume for the spring festival in Bắc Ninh and folk singing photoshoots. Which outfit should I style?',
+    isCultureGuardTest: false,
+  },
+  {
+    label: 'Imperial Royal Wedding',
+    prompt:
+      'I am preparing for an engagement ceremony and traditional wedding shoot. I would like 3 regal imperial costume options.',
+    isCultureGuardTest: false,
+  },
+  {
+    label: 'Rule 1: Male wearing Nón Quai Thao',
+    prompt:
+      'I am a male student planning to wear Áo Ngũ Thân with Nón Quai Thao for a unique graduation look. Is this culturally appropriate?',
+    isCultureGuardTest: true,
+  },
+  {
+    label: 'Rule 2: 5-Claw Dragon Motif',
+    prompt:
+      'Can I custom-tailor an Áo Ngũ Thân embroidered with a 5-claw dragon motif for spring festival visits?',
+    isCultureGuardTest: true,
+  },
+  {
+    label: 'Rule 3: Nhật Bình + Jeans',
+    prompt:
+      'Can I wear Áo Nhật Bình paired with a short skirt above the knee or jeans and sneakers for a sporty vibe?',
+    isCultureGuardTest: true,
+  },
+];
+
+const getQuickPrompts = (isEn: boolean) => (isEn ? QUICK_PROMPTS_EN : QUICK_PROMPTS_VI);
+
 export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
   studioSelection,
   onApplyCardToStudio,
@@ -432,25 +757,65 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
   externalPromptTrigger,
   userMeasurements = INITIAL_USER_MEASUREMENTS,
   externalSendMeasurementsTrigger,
+  language = 'vi',
 }) => {
+  const lang = language || 'vi';
+  const isEn = lang === 'en';
+  const tDict = TRANSLATIONS[lang] || TRANSLATIONS.vi;
+  const tMessages = tDict.messages;
+  const tCommon = tDict.common;
+
   const [activeThreadId, setActiveThreadId] = useState<string>('tailor-y-van-hien');
   const [inboxFilter, setInboxFilter] = useState<'ALL' | 'tailor_business' | 'user_account'>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Direct Threads State
-  const [directThreads, setDirectThreads] = useState<MessagingThread[]>(INITIAL_DIRECT_THREADS);
+  const [directThreads, setDirectThreads] = useState<MessagingThread[]>(
+    isEn ? INITIAL_DIRECT_THREADS_EN : INITIAL_DIRECT_THREADS
+  );
   const [directInput, setDirectInput] = useState<string>('');
 
   // Special Sub-Module: AI Stylist State
-  const [messages, setMessages] = useState<AdvisorMessage[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<AdvisorMessage[]>(
+    isEn ? INITIAL_MESSAGES_EN : INITIAL_MESSAGES
+  );
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   // 4 Input Variables for AI Stylist
-  const [stepEvent, setStepEvent] = useState('Lễ tốt nghiệp');
-  const [stepWeather, setStepWeather] = useState('Mùa thu (Mát mẻ)');
-  const [stepStyle, setStepStyle] = useState('Cổ điển trang trọng');
-  const [stepBudget, setStepBudget] = useState('Tiết kiệm (Sinh viên)');
+  const [stepEvent, setStepEvent] = useState(isEn ? 'Graduation Ceremony' : 'Lễ tốt nghiệp');
+  const [stepWeather, setStepWeather] = useState(isEn ? 'Autumn (Cool)' : 'Mùa thu (Mát mẻ)');
+  const [stepStyle, setStepStyle] = useState(isEn ? 'Traditional Formal' : 'Cổ điển trang trọng');
+  const [stepBudget, setStepBudget] = useState(isEn ? 'Student Friendly' : 'Tiết kiệm (Sinh viên)');
+
+  // Sync initial conversation when language changes if no custom user chats have occurred
+  useEffect(() => {
+    setMessages((prev) => {
+      const isInitialOnly =
+        prev.length === 2 &&
+        prev[0].id === 'msg-few-shot-user' &&
+        prev[1].id === 'msg-few-shot-assistant';
+      if (isInitialOnly) {
+        return isEn ? INITIAL_MESSAGES_EN : INITIAL_MESSAGES;
+      }
+      return prev;
+    });
+
+    setDirectThreads((prev) => {
+      const isInitial = prev.every((t) =>
+        t.messages.every((m) => !m.id.startsWith('dm-'))
+      );
+      if (isInitial) {
+        return isEn ? INITIAL_DIRECT_THREADS_EN : INITIAL_DIRECT_THREADS;
+      }
+      return prev;
+    });
+
+    setStepEvent(isEn ? 'Graduation Ceremony' : 'Lễ tốt nghiệp');
+    setStepWeather(isEn ? 'Autumn (Cool)' : 'Mùa thu (Mát mẻ)');
+    setStepStyle(isEn ? 'Traditional Formal' : 'Cổ điển trang trọng');
+    setStepBudget(isEn ? 'Student Friendly' : 'Tiết kiệm (Sinh viên)');
+  }, [isEn]);
 
   // Popovers & Drawers inside AI Stylist
   const [quizPopoverOpen, setQuizPopoverOpen] = useState<boolean>(false);
@@ -573,9 +938,11 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
       text:
         textToSend ||
         (options?.attachMeasurements
-          ? `Mình gửi Bảng Số Đo 3D (Cao ${userMeasurements.height_cm}cm · Nặng ${userMeasurements.weight_kg}kg · Size ${userMeasurements.suggested_size} · Vai ${userMeasurements.shoulder_width_cm}cm · Dài tay ${userMeasurements.sleeve_length_cm}cm) và mẫu trang phục để tiệm tư vấn may đo ạ.`
-          : 'Mình chia sẻ mẫu trang phục 3D đang phối, xem thử nhé!'),
-      timestamp: 'Vừa xong',
+          ? (isEn
+            ? `Sending 3D Body Profile (Height ${userMeasurements.height_cm}cm · Weight ${userMeasurements.weight_kg}kg · Size ${userMeasurements.suggested_size} · Shoulder ${userMeasurements.shoulder_width_cm}cm · Sleeve ${userMeasurements.sleeve_length_cm}cm) and selected attire for custom tailoring consultation.`
+            : `Mình gửi Bảng Số Đo 3D (Cao ${userMeasurements.height_cm}cm · Nặng ${userMeasurements.weight_kg}kg · Size ${userMeasurements.suggested_size} · Vai ${userMeasurements.shoulder_width_cm}cm · Dài tay ${userMeasurements.sleeve_length_cm}cm) và mẫu trang phục để tiệm tư vấn may đo ạ.`)
+          : (isEn ? 'Sharing my current 3D outfit styling, check it out!' : 'Mình chia sẻ mẫu trang phục 3D đang phối, xem thử nhé!')),
+      timestamp: isEn ? 'Just now' : 'Vừa xong',
       attached3DOutfit: options?.attach3D ? currentStudio : undefined,
       attachedMeasurements: options?.attachMeasurements
         ? {
@@ -588,13 +955,23 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
     const replyText =
       targetThread.category === 'tailor_business'
         ? options?.attachMeasurements
-          ? `Cảm ơn bạn! ${targetThread.name} đã nhận số đo 3D (${measurementStats.heightCm}cm · ${measurementStats.chestCm}-${measurementStats.waistCm}-${measurementStats.hipCm}cm) cho mẫu "${currentStudio.title}". Xưởng sẵn sàng lên rập may cho bạn!`
+          ? (isEn
+            ? `Thank you! ${targetThread.name} received your 3D measurements (${measurementStats.heightCm}cm · ${measurementStats.chestCm}-${measurementStats.waistCm}-${measurementStats.hipCm}cm) for "${currentStudio.title}". Our workshop is ready to draft your pattern!`
+            : `Cảm ơn bạn! ${targetThread.name} đã nhận số đo 3D (${measurementStats.heightCm}cm · ${measurementStats.chestCm}-${measurementStats.waistCm}-${measurementStats.hipCm}cm) cho mẫu "${currentStudio.title}". Xưởng sẵn sàng lên rập may cho bạn!`)
           : options?.attach3D
-          ? `${targetThread.name} đã nhận mẫu 3D "${currentStudio.title}". Mẫu này đang có sẵn tại tiệm, bạn muốn đặt thuê hay may mới ạ?`
-          : `Dạ ${targetThread.name} đã nhận được tin nhắn. Tiệm sẽ kiểm tra lịch và phản hồi bạn ngay nhé!`
+          ? (isEn
+            ? `${targetThread.name} received your 3D design "${currentStudio.title}". This style is currently in stock—would you like to reserve for rental or order custom tailoring?`
+            : `${targetThread.name} đã nhận mẫu 3D "${currentStudio.title}". Mẫu này đang có sẵn tại tiệm, bạn muốn đặt thuê hay may mới ạ?`)
+          : (isEn
+            ? `Hello, ${targetThread.name} received your message. We will check our schedule and reply shortly!`
+            : `Dạ ${targetThread.name} đã nhận được tin nhắn. Tiệm sẽ kiểm tra lịch và phản hồi bạn ngay nhé!`)
         : options?.attach3D
-        ? `Phối màu bộ "${currentStudio.title}" đẹp quá! Để mình bấm Thử 3D xem thử nha.`
-        : `Mình nhận được tin nhắn rồi nha! Hôm nào đi chụp cổ phục nhớ rủ mình nhé.`;
+        ? (isEn
+          ? `The color palette on "${currentStudio.title}" looks great! Let me click Try 3D to fit it.`
+          : `Phối màu bộ "${currentStudio.title}" đẹp quá! Để mình bấm Thử 3D xem thử nha.`)
+        : (isEn
+          ? `Message received! Let's schedule a heritage photoshoot together soon.`
+          : `Mình nhận được tin nhắn rồi nha! Hôm nào đi chụp cổ phục nhớ rủ mình nhé.`);
 
     setDirectThreads((prev) =>
       prev.map((thread) =>
@@ -609,7 +986,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                   id: `dm-reply-${Date.now()}`,
                   sender: 'them',
                   text: replyText,
-                  timestamp: 'Vừa xong',
+                  timestamp: isEn ? 'Just now' : 'Vừa xong',
                 },
               ],
             }
@@ -635,7 +1012,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
       id: `user-${Date.now()}`,
       role: 'user',
       text: trimmed,
-      timestamp: 'Vừa xong',
+      timestamp: isEn ? 'Just now' : 'Vừa xong',
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -662,6 +1039,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
         body: JSON.stringify({
           message: trimmed,
           history: messages.map((m) => ({ role: m.role, text: m.text })),
+          language: lang,
           quizInputs: explicitQuizInputs || {
             event: stepEvent,
             weather: stepWeather,
@@ -683,7 +1061,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error('Không thể kết nối AI Smart Stylist');
+        throw new Error(isEn ? 'Unable to connect to AI Smart Stylist' : 'Không thể kết nối AI Smart Stylist');
       }
 
       const data = await response.json();
@@ -691,17 +1069,17 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
       const lookbookCard: LookbookCardData | undefined = data.lookbookCard
         ? {
             id: `ai-lb-${Date.now()}`,
-            outfitName: data.lookbookCard.outfitName || 'Khuê Văn Tri Thức',
+            outfitName: data.lookbookCard.outfitName || (isEn ? 'Khuê Văn Intellect' : 'Khuê Văn Tri Thức'),
             mainGarment: data.lookbookCard.mainGarment,
             accessories: Array.isArray(data.lookbookCard.accessories)
               ? data.lookbookCard.accessories
-              : ['Khăn xếp đồng bộ', 'Guốc gỗ mộc'],
+              : [isEn ? 'Matching Khăn Xếp' : 'Khăn xếp đồng bộ', isEn ? 'Traditional Guốc Mộc' : 'Guốc gỗ mộc'],
             palette: Array.isArray(data.lookbookCard.palette)
               ? data.lookbookCard.palette
               : [
-                  { name: 'Xanh Ngọc Lam', hex: '#2E8B57', role: 'Áo ngoài' },
-                  { name: 'Trắng Ngà', hex: '#FFFFF0', role: 'Áo lót & Quần' },
-                  { name: 'Gỗ Mộc', hex: '#8B4513', role: 'Phụ kiện' },
+                  { name: isEn ? 'Jade Cyan' : 'Xanh Ngọc Lam', hex: '#2E8B57', role: isEn ? 'Outer robe' : 'Áo ngoài' },
+                  { name: isEn ? 'Ivory White' : 'Trắng Ngà', hex: '#FFFFF0', role: isEn ? 'Inner & Trousers' : 'Áo lót & Quần' },
+                  { name: isEn ? 'Guốc Mộc' : 'Gỗ Mộc', hex: '#8B4513', role: isEn ? 'Accessories' : 'Phụ kiện' },
                 ],
             occasionAndWeather: data.lookbookCard.occasionAndWeather,
             culturalMeaning: data.lookbookCard.culturalMeaning,
@@ -733,7 +1111,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
         text:
           data.replyIntro ||
           consultation?.part1Summary.overviewText ||
-          'Dưới đây là 3 phương án Lookbook 3D tối ưu:',
+          (isEn ? 'Here are 3 optimized 3D Lookbook options:' : 'Dưới đây là 3 phương án Lookbook 3D tối ưu:'),
         lookbookCard,
         consultation,
         timestamp: 'AI Stylist',
@@ -742,12 +1120,13 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
       setMessages((prev) => [...prev, aiMsg]);
     } catch (err) {
       console.error(err);
+      const fallbackConsult = isEn ? INITIAL_CONSULTATION_EN : INITIAL_CONSULTATION;
       const fallbackMsg: AdvisorMessage = {
         id: `ai-err-${Date.now()}`,
         role: 'assistant',
-        text: INITIAL_CONSULTATION.part1Summary.overviewText,
-        lookbookCard: CURATED_LOOKBOOKS[0],
-        consultation: INITIAL_CONSULTATION,
+        text: fallbackConsult.part1Summary.overviewText,
+        lookbookCard: fallbackConsult.lookbookCard,
+        consultation: fallbackConsult,
         timestamp: 'AI Stylist',
       };
       setMessages((prev) => [...prev, fallbackMsg]);
@@ -783,7 +1162,9 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
   }, [messages, isLoading, directThreads, activeThreadId]);
 
   const handleGuidedSubmit = () => {
-    const builtPrompt = `Tư vấn 3 phương án cho: ${stepEvent} · ${stepWeather} · ${stepStyle} · ${stepBudget}`;
+    const builtPrompt = isEn
+      ? `Recommend 3 options for: ${stepEvent} · ${stepWeather} · ${stepStyle} · ${stepBudget}`
+      : `Tư vấn 3 phương án cho: ${stepEvent} · ${stepWeather} · ${stepStyle} · ${stepBudget}`;
     sendPromptToAdvisor(builtPrompt, {
       event: stepEvent,
       weather: stepWeather,
@@ -795,9 +1176,13 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
   const handleSendCurrent3DOutfit = () => {
     const garment = HERITAGE_GARMENTS.find((g) => g.id === studioSelection.garmentId);
     const palette = LOOKBOOK_PALETTES.find((p) => p.id === studioSelection.paletteId);
-    const prompt = `Kiểm duyệt văn hóa và gợi ý 3 phương án phối đồ dựa trên bộ ${
-      garment?.name || 'Việt phục'
-    } (${palette?.name || ''}) mình đang mặc trong Phòng thử.`;
+    const prompt = isEn
+      ? `Verify cultural etiquette and recommend 3 styling options based on the ${
+          garment?.name || 'Vietnamese costume'
+        } (${palette?.name || ''}) currently fitted in the 3D Fitting Room.`
+      : `Kiểm duyệt văn hóa và gợi ý 3 phương án phối đồ dựa trên bộ ${
+          garment?.name || 'Việt phục'
+        } (${palette?.name || ''}) mình đang mặc trong Phòng thử.`;
     sendPromptToAdvisor(prompt);
   };
 
@@ -829,7 +1214,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
             {/* Top Inbox Title + Search */}
             <div className="px-4 pt-3.5 pb-2.5 space-y-2.5">
               <div className="flex items-center justify-between">
-                <h2 className="text-base font-bold tracking-tight text-zinc-950">Tin nhắn</h2>
+                <h2 className="text-base font-bold tracking-tight text-zinc-950">{tMessages.title}</h2>
                 <button
                   type="button"
                   onClick={() => setActiveThreadId('ai-stylist')}
@@ -850,7 +1235,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Tìm kiếm..."
+                  placeholder={tMessages.searchPlaceholder}
                   className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-zinc-100 text-xs text-zinc-900 placeholder:text-zinc-400 focus:outline-none"
                 />
               </div>
@@ -860,9 +1245,9 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
             <div className="grid grid-cols-3 border-b border-zinc-200 text-xs font-semibold">
               {(
                 [
-                  { id: 'ALL', label: 'Tất cả' },
-                  { id: 'tailor_business', label: 'Tiệm may' },
-                  { id: 'user_account', label: 'Cá nhân' },
+                  { id: 'ALL', label: tMessages.tabAll },
+                  { id: 'tailor_business', label: tMessages.tabTailors },
+                  { id: 'user_account', label: tMessages.tabPersonal },
                 ] as const
               ).map((tab) => (
                 <button
@@ -904,7 +1289,9 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                       AI
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-500 truncate mt-0.5">Trợ lý phối đồ</p>
+                  <p className="text-xs text-zinc-500 truncate mt-0.5">
+                    {isEn ? 'Fashion Advisor' : 'Trợ lý phối đồ'}
+                  </p>
                 </div>
               </button>
 
@@ -964,7 +1351,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                           }`}
                         >
                           {lastMsg
-                            ? `${lastMsg.sender === 'me' ? 'Bạn: ' : ''}${lastMsg.text}`
+                            ? `${lastMsg.sender === 'me' ? (isEn ? 'You: ' : 'Bạn: ') : ''}${lastMsg.text}`
                             : thread.roleBadge}
                         </p>
                         {hasUnread && (
@@ -1009,7 +1396,9 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                       }`}
                     >
                       <Archive className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">Đã lưu ({savedIds.length})</span>
+                      <span className="hidden sm:inline">
+                        {isEn ? `Saved (${savedIds.length})` : `Đã lưu (${savedIds.length})`}
+                      </span>
                     </button>
 
                     <button
@@ -1022,13 +1411,13 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                       }`}
                     >
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      <span className="hidden sm:inline">Quy tắc</span>
+                      <span className="hidden sm:inline">{isEn ? 'Rules' : 'Quy tắc'}</span>
                     </button>
 
                     <button
                       type="button"
-                      onClick={() => setMessages(INITIAL_MESSAGES)}
-                      title="Làm mới"
+                      onClick={() => setMessages(isEn ? INITIAL_MESSAGES_EN : INITIAL_MESSAGES)}
+                      title={isEn ? 'Reset' : 'Làm mới'}
                       className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 cursor-pointer"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
@@ -1045,7 +1434,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                       onApplyCard={onApplyCardToStudio}
                       onToggleSave={onSaveLookbook}
                       onClose={() => setCollectionDrawerOpen(false)}
-                      title="Bộ sưu tập đã lưu"
+                      title={isEn ? 'Saved Collection' : 'Bộ sưu tập đã lưu'}
                       onSaveCurrentOutfit={() => {
                         const lastConsultMsg = [...messages]
                           .reverse()
@@ -1068,16 +1457,34 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                 {rulesDrawerOpen && (
                   <div className="p-3 bg-zinc-50 border-b border-zinc-200 grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] shrink-0">
                     <div className="p-2 rounded-lg bg-white border border-zinc-200/80">
-                      <strong className="text-zinc-900 block">1. Giới tính &amp; Phụ kiện</strong>
-                      <span className="text-zinc-500">Không phối Nón quai thao với Ngũ Thân nam.</span>
+                      <strong className="text-zinc-900 block">
+                        {isEn ? '1. Gender & Accessories' : '1. Giới tính & Phụ kiện'}
+                      </strong>
+                      <span className="text-zinc-500">
+                        {isEn
+                          ? 'Do not pair Nón Quai Thao with male Áo Ngũ Thân.'
+                          : 'Không phối Nón quai thao với Ngũ Thân nam.'}
+                      </span>
                     </div>
                     <div className="p-2 rounded-lg bg-white border border-zinc-200/80">
-                      <strong className="text-zinc-900 block">2. Rồng 5 Móng</strong>
-                      <span className="text-zinc-500">Không dùng Rồng 5 móng cho thường phục.</span>
+                      <strong className="text-zinc-900 block">
+                        {isEn ? '2. 5-Claw Dragon' : '2. Rồng 5 Móng'}
+                      </strong>
+                      <span className="text-zinc-500">
+                        {isEn
+                          ? 'Do not use 5-claw dragon motifs on everyday garments.'
+                          : 'Không dùng Rồng 5 móng cho thường phục.'}
+                      </span>
                     </div>
                     <div className="p-2 rounded-lg bg-white border border-zinc-200/80">
-                      <strong className="text-zinc-900 block">3. Nhật Bình</strong>
-                      <span className="text-zinc-500">Mặc cùng quần lụa &amp; hài, không phối quần jeans.</span>
+                      <strong className="text-zinc-900 block">
+                        {isEn ? '3. Áo Nhật Bình' : '3. Nhật Bình'}
+                      </strong>
+                      <span className="text-zinc-500">
+                        {isEn
+                          ? 'Wear with silk trousers & Hài Thêu; do not pair with jeans or short skirts.'
+                          : 'Mặc cùng quần lụa & hài, không phối quần jeans.'}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -1145,7 +1552,13 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                               <ShieldCheck className="w-3 h-3" />
                             )}
                             <span>
-                              {consult.part3CultureGuard.hasViolation ? 'Lưu ý' : 'Chuẩn'}
+                              {consult.part3CultureGuard.hasViolation
+                                ? isEn
+                                  ? 'Caution'
+                                  : 'Lưu ý'
+                                : isEn
+                                ? 'Approved'
+                                : 'Chuẩn'}
                             </span>
                           </button>
                         </div>
@@ -1171,7 +1584,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                                       : 'text-zinc-500 hover:text-zinc-900'
                                   }`}
                                 >
-                                  Phương án {opt.optionNumber}
+                                  {isEn ? `Option ${opt.optionNumber}` : `Phương án ${opt.optionNumber}`}
                                 </button>
                               ))}
                             </div>
@@ -1194,7 +1607,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                                   setLookbookModalTab('compare');
                                   setLookbookModalOpen(true);
                                 }}
-                                title="So sánh"
+                                title={isEn ? 'Compare' : 'So sánh'}
                                 className="p-1 rounded text-zinc-500 hover:text-zinc-900 cursor-pointer"
                               >
                                 <Columns2 className="w-3.5 h-3.5" />
@@ -1205,7 +1618,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                                   setLookbookModalTab('export');
                                   setLookbookModalOpen(true);
                                 }}
-                                title="Xuất Lookbook"
+                                title={isEn ? 'Export Lookbook' : 'Xuất Lookbook'}
                                 className="p-1 rounded text-zinc-500 hover:text-zinc-900 cursor-pointer"
                               >
                                 <Share2 className="w-3.5 h-3.5" />
@@ -1213,7 +1626,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                               <button
                                 type="button"
                                 onClick={() => toggleCode(msg.id)}
-                                title="Mã JSON"
+                                title={isEn ? 'JSON Code' : 'Mã JSON'}
                                 className="p-1 rounded text-zinc-500 hover:text-zinc-900 cursor-pointer"
                               >
                                 <Code2 className="w-3.5 h-3.5" />
@@ -1263,7 +1676,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                                 onClick={() => toggleDetails(msg.id)}
                                 className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-900 cursor-pointer"
                               >
-                                <span>{isDetailsExpanded ? 'Ẩn chi tiết' : 'Xem chi tiết'}</span>
+                                <span>{isDetailsExpanded ? (isEn ? 'Hide details' : 'Ẩn chi tiết') : (isEn ? 'View details' : 'Xem chi tiết')}</span>
                                 <ChevronDown
                                   className={`w-3 h-3 transition-transform ${
                                     isDetailsExpanded ? 'rotate-180' : ''
@@ -1284,7 +1697,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                                   className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-zinc-950 text-white text-xs font-semibold cursor-pointer"
                                 >
                                   <Cuboid className="w-3 h-3 text-emerald-400" />
-                                  <span>Thử 3D</span>
+                                  <span>{isEn ? 'Try 3D' : 'Thử 3D'}</span>
                                 </button>
 
                                 <button
@@ -1304,11 +1717,11 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                             {isDetailsExpanded && (
                               <div className="p-2.5 rounded-xl bg-zinc-50 text-[11px] text-zinc-600 space-y-1">
                                 <p>
-                                  <strong className="text-zinc-900">Phụ kiện:</strong>{' '}
+                                  <strong className="text-zinc-900">{isEn ? 'Accessories:' : 'Phụ kiện:'}</strong>{' '}
                                   {currentOpt.accessories.join(' · ')}
                                 </p>
                                 <p>
-                                  <strong className="text-zinc-900">Ý nghĩa:</strong>{' '}
+                                  <strong className="text-zinc-900">{isEn ? 'Cultural Meaning:' : 'Ý nghĩa:'}</strong>{' '}
                                   {currentOpt.culturalMeaning}
                                 </p>
                               </div>
@@ -1349,7 +1762,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                   {isLoading && (
                     <div className="flex items-center gap-2 text-xs text-zinc-400">
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Đang phân tích...</span>
+                      <span>{isEn ? 'Analyzing...' : 'Đang phân tích...'}</span>
                     </div>
                   )}
 
@@ -1361,7 +1774,9 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                   {quizPopoverOpen && (
                     <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 space-y-2 text-xs">
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-zinc-900">Chọn ngữ cảnh phối đồ</span>
+                        <span className="font-semibold text-zinc-900">
+                          {isEn ? 'Select Styling Context' : 'Chọn ngữ cảnh phối đồ'}
+                        </span>
                         <button
                           type="button"
                           onClick={() => setQuizPopoverOpen(false)}
@@ -1376,38 +1791,66 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                           onChange={(e) => setStepEvent(e.target.value)}
                           className="px-2 py-1 bg-white rounded-lg border border-zinc-200"
                         >
-                          <option value="Lễ tốt nghiệp">Lễ tốt nghiệp</option>
-                          <option value="Đi cưới">Đi cưới</option>
-                          <option value="Đi chùa / Di tích">Đi chùa / Di tích</option>
-                          <option value="Chụp ảnh kỷ yếu">Chụp ảnh kỷ yếu</option>
-                          <option value="Dạo phố">Dạo phố</option>
+                          <option value={isEn ? 'Graduation Ceremony' : 'Lễ tốt nghiệp'}>
+                            {isEn ? 'Graduation Ceremony' : 'Lễ tốt nghiệp'}
+                          </option>
+                          <option value={isEn ? 'Traditional Wedding' : 'Đi cưới'}>
+                            {isEn ? 'Traditional Wedding' : 'Đi cưới'}
+                          </option>
+                          <option value={isEn ? 'Temple & Heritage' : 'Đi chùa / Di tích'}>
+                            {isEn ? 'Temple & Heritage' : 'Đi chùa / Di tích'}
+                          </option>
+                          <option value={isEn ? 'Yearbook Photoshoot' : 'Chụp ảnh kỷ yếu'}>
+                            {isEn ? 'Yearbook Photoshoot' : 'Chụp ảnh kỷ yếu'}
+                          </option>
+                          <option value={isEn ? 'City Walk & Casual' : 'Dạo phố'}>
+                            {isEn ? 'City Walk & Casual' : 'Dạo phố'}
+                          </option>
                         </select>
                         <select
                           value={stepWeather}
                           onChange={(e) => setStepWeather(e.target.value)}
                           className="px-2 py-1 bg-white rounded-lg border border-zinc-200"
                         >
-                          <option value="Mùa thu (Mát mẻ)">Mùa thu</option>
-                          <option value="Mùa hè (Nắng ấm)">Mùa hè</option>
-                          <option value="Mùa đông (Se lạnh)">Mùa đông</option>
+                          <option value={isEn ? 'Autumn (Cool)' : 'Mùa thu (Mát mẻ)'}>
+                            {isEn ? 'Autumn (Cool)' : 'Mùa thu'}
+                          </option>
+                          <option value={isEn ? 'Summer (Warm)' : 'Mùa hè (Nắng ấm)'}>
+                            {isEn ? 'Summer (Warm)' : 'Mùa hè'}
+                          </option>
+                          <option value={isEn ? 'Winter (Chilly)' : 'Mùa đông (Se lạnh)'}>
+                            {isEn ? 'Winter (Chilly)' : 'Mùa đông'}
+                          </option>
                         </select>
                         <select
                           value={stepStyle}
                           onChange={(e) => setStepStyle(e.target.value)}
                           className="px-2 py-1 bg-white rounded-lg border border-zinc-200"
                         >
-                          <option value="Cổ điển trang trọng">Cổ điển</option>
-                          <option value="Tối giản thanh lịch">Tối giản</option>
-                          <option value="Phá cách hiện đại">Phá cách</option>
+                          <option value={isEn ? 'Traditional Formal' : 'Cổ điển trang trọng'}>
+                            {isEn ? 'Traditional Formal' : 'Cổ điển'}
+                          </option>
+                          <option value={isEn ? 'Minimalist & Elegant' : 'Tối giản thanh lịch'}>
+                            {isEn ? 'Minimalist & Elegant' : 'Tối giản'}
+                          </option>
+                          <option value={isEn ? 'Modern Fusion' : 'Phá cách hiện đại'}>
+                            {isEn ? 'Modern Fusion' : 'Phá cách'}
+                          </option>
                         </select>
                         <select
                           value={stepBudget}
                           onChange={(e) => setStepBudget(e.target.value)}
                           className="px-2 py-1 bg-white rounded-lg border border-zinc-200"
                         >
-                          <option value="Tiết kiệm (Sinh viên)">Sinh viên</option>
-                          <option value="Phổ thông">Phổ thông</option>
-                          <option value="Cao cấp">Cao cấp</option>
+                          <option value={isEn ? 'Student Friendly' : 'Tiết kiệm (Sinh viên)'}>
+                            {isEn ? 'Student Friendly' : 'Sinh viên'}
+                          </option>
+                          <option value={isEn ? 'Standard' : 'Phổ thông'}>
+                            {isEn ? 'Standard' : 'Phổ thông'}
+                          </option>
+                          <option value={isEn ? 'Luxury' : 'Cao cấp'}>
+                            {isEn ? 'Luxury' : 'Cao cấp'}
+                          </option>
                         </select>
                       </div>
                       <div className="flex justify-end">
@@ -1416,7 +1859,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                           onClick={handleGuidedSubmit}
                           className="px-3 py-1 rounded-lg bg-zinc-950 text-white font-semibold cursor-pointer"
                         >
-                          Tạo 3 phương án
+                          {isEn ? 'Generate 3 Options' : 'Tạo 3 phương án'}
                         </button>
                       </div>
                     </div>
@@ -1424,7 +1867,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
 
                   {promptsOpen && (
                     <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
-                      {QUICK_PROMPTS.map((item) => (
+                      {getQuickPrompts(isEn).map((item) => (
                         <button
                           key={item.label}
                           type="button"
@@ -1450,7 +1893,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                         setQuizPopoverOpen((prev) => !prev);
                         setPromptsOpen(false);
                       }}
-                      title="Chọn dịp & ngân sách"
+                      title={isEn ? 'Occasion & Budget' : 'Chọn dịp & ngân sách'}
                       className={`p-1.5 rounded-full cursor-pointer ${
                         quizPopoverOpen ? 'bg-zinc-900 text-white' : 'text-zinc-500 hover:bg-zinc-100'
                       }`}
@@ -1464,7 +1907,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                         setPromptsOpen((prev) => !prev);
                         setQuizPopoverOpen(false);
                       }}
-                      title="Câu hỏi gợi ý"
+                      title={isEn ? 'Suggested prompts' : 'Câu hỏi gợi ý'}
                       className={`p-1.5 rounded-full cursor-pointer ${
                         promptsOpen ? 'bg-amber-500 text-zinc-950' : 'text-zinc-500 hover:bg-zinc-100'
                       }`}
@@ -1475,7 +1918,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                     <button
                       type="button"
                       onClick={handleSendCurrent3DOutfit}
-                      title="Gửi bộ đang thử"
+                      title={isEn ? 'Send current 3D outfit' : 'Gửi bộ đang thử'}
                       className="p-1.5 rounded-full text-zinc-500 hover:bg-zinc-100 cursor-pointer"
                     >
                       <Cuboid className="w-3.5 h-3.5 text-emerald-600" />
@@ -1485,7 +1928,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                       type="text"
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
-                      placeholder="Nhắn tin cho AI Stylist..."
+                      placeholder={isEn ? 'Message AI Stylist...' : 'Nhắn tin cho AI Stylist...'}
                       className="flex-1 text-xs sm:text-sm bg-transparent text-zinc-900 placeholder:text-zinc-400 focus:outline-none px-1"
                     />
 
@@ -1556,10 +1999,10 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                               <div className="p-2 rounded-xl bg-black/20 text-xs space-y-0.5">
                                 <div className="flex items-center gap-1 font-bold text-amber-300">
                                   <Ruler className="w-3 h-3" />
-                                  <span>Số đo 3D: {dm.attachedMeasurements.garmentName}</span>
+                                  <span>{isEn ? '3D Specs' : 'Số đo 3D'}: {dm.attachedMeasurements.garmentName}</span>
                                 </div>
                                 <p className="text-[11px] font-mono-tabular opacity-90">
-                                  Cao {dm.attachedMeasurements.heightCm}cm ·{' '}
+                                  {isEn ? 'Height' : 'Cao'} {dm.attachedMeasurements.heightCm}cm ·{' '}
                                   {dm.attachedMeasurements.chestCm}-
                                   {dm.attachedMeasurements.waistCm}-
                                   {dm.attachedMeasurements.hipCm}cm
@@ -1588,7 +2031,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                                   }
                                   className="px-2.5 py-1 rounded-lg bg-emerald-500 text-zinc-950 font-bold text-[11px] shrink-0 cursor-pointer"
                                 >
-                                  Thử 3D
+                                  {isEn ? 'Try 3D' : 'Thử 3D'}
                                 </button>
                               </div>
                             )}
@@ -1614,26 +2057,30 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                             type="button"
                             onClick={() =>
                               handleSendDirectMessage(
-                                'Mình gửi số đo 3D và mẫu Việt phục đang thử để đặt may / giữ size ạ.',
+                                isEn
+                                  ? 'Sending 3D measurements and traditional attire to consult on custom tailoring / sizing.'
+                                  : 'Mình gửi số đo 3D và mẫu Việt phục đang thử để đặt may / giữ size ạ.',
                                 { attachMeasurements: true, attach3D: true }
                               )
                             }
-                            title="Gửi số đo 3D đặt may"
+                            title={isEn ? 'Send 3D tailoring measurements' : 'Gửi số đo 3D đặt may'}
                             className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-[11px] font-medium shrink-0 cursor-pointer"
                           >
                             <Ruler className="w-3 h-3 text-amber-600" />
-                            <span className="hidden sm:inline">Số đo 3D</span>
+                            <span className="hidden sm:inline">{isEn ? '3D Specs' : 'Số đo 3D'}</span>
                           </button>
 
                           <button
                             type="button"
                             onClick={() =>
                               handleSendDirectMessage(
-                                'Cho mình hỏi mẫu này còn lịch thuê cuối tuần không ạ?',
+                                isEn
+                                  ? 'Hello! Is this outfit available for rental this weekend?'
+                                  : 'Cho mình hỏi mẫu này còn lịch thuê cuối tuần không ạ?',
                                 { attach3D: true }
                               )
                             }
-                            title="Hỏi lịch thuê"
+                            title={isEn ? 'Check rental availability' : 'Hỏi lịch thuê'}
                             className="p-1.5 rounded-full text-zinc-500 hover:bg-zinc-100 shrink-0 cursor-pointer"
                           >
                             <Calendar className="w-3.5 h-3.5 text-emerald-600" />
@@ -1645,11 +2092,13 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                         type="button"
                         onClick={() =>
                           handleSendDirectMessage(
-                            'Mình chia sẻ cấu hình bộ cổ phục 3D đang phối, xem thử nhé!',
+                            isEn
+                              ? 'Sharing my current 3D traditional outfit configuration, check it out!'
+                              : 'Mình chia sẻ cấu hình bộ cổ phục 3D đang phối, xem thử nhé!',
                             { attach3D: true }
                           )
                         }
-                        title="Đính kèm mẫu 3D đang mặc"
+                        title={isEn ? 'Attach current 3D outfit' : 'Đính kèm mẫu 3D đang mặc'}
                         className="p-1.5 rounded-full text-zinc-500 hover:bg-zinc-100 shrink-0 cursor-pointer"
                       >
                         <Cuboid className="w-3.5 h-3.5 text-emerald-600" />
@@ -1659,7 +2108,11 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
                         type="text"
                         value={directInput}
                         onChange={(e) => setDirectInput(e.target.value)}
-                        placeholder={`Nhắn tin cho ${activeDirectThread.name}...`}
+                        placeholder={
+                          isEn
+                            ? `Message ${activeDirectThread.name}...`
+                            : `Nhắn tin cho ${activeDirectThread.name}...`
+                        }
                         className="flex-1 text-xs sm:text-sm bg-transparent text-zinc-900 placeholder:text-zinc-400 focus:outline-none px-1"
                       />
 
@@ -1685,6 +2138,7 @@ export const CulturalAdvisorSection: React.FC<CulturalAdvisorSectionProps> = ({
           selection={studioSelection}
           allLookbooks={allLookbooks}
           initialCompareIds={compareIds}
+          language={lang}
           onClose={() => setLookbookModalOpen(false)}
           onApplyCardToStudio={onApplyCardToStudio}
           onApplyDeepLinkPayload={(payload) => {

@@ -44,6 +44,7 @@ interface LookbookStudioModalProps {
   customPrimaryHex?: string | null;
   allLookbooks: LookbookCardData[];
   initialCompareIds?: [string, string];
+  language?: 'vi' | 'en';
   onClose: () => void;
   onApplyCardToStudio: (card: LookbookCardData) => void;
   onApplyDeepLinkPayload: (payload: DeepLinkPayload, mode: 'app-installed' | 'web-preview') => void;
@@ -58,10 +59,12 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
   customPrimaryHex,
   allLookbooks,
   initialCompareIds,
+  language = 'vi',
   onClose,
   onApplyCardToStudio,
   onApplyDeepLinkPayload,
 }) => {
+  const isEn = language === 'en';
   const [activeTab, setActiveTab] = useState<'export' | 'compare'>(initialTab);
   const [ratioPreset, setRatioPreset] = useState<SocialRatioPreset>('9:16');
   const [customTitle, setCustomTitle] = useState<string>('');
@@ -204,7 +207,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
   };
 
   // Download High-Res Social Canvas PNG (9:16, 1:1, or 4:5)
-  const handleDownloadSocialCanvasPNG = () => {
+  const handleDownloadSocialCanvasPNG = async () => {
     const canvas = document.createElement('canvas');
     const width = 1080;
     const height = ratioPreset === '9:16' ? 1920 : ratioPreset === '4:5' ? 1350 : 1080;
@@ -233,75 +236,176 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
     // Outfit Title
     ctx.fillStyle = '#FFFFFF';
     ctx.font = 'bold 54px Inter, sans-serif';
-    ctx.fillText(exportPackage.title.slice(0, 34), 64, 162);
+    ctx.fillText(exportPackage.title.slice(0, 34), 64, 156);
 
     // Garment & Context Subtitle
     ctx.fillStyle = '#D4D4D8';
     ctx.font = '500 28px Inter, sans-serif';
-    ctx.fillText(exportPackage.outfit_details.type.slice(0, 58), 64, 214);
+    ctx.fillText(exportPackage.outfit_details.type.slice(0, 58), 64, 204);
     ctx.fillStyle = '#60A5FA';
-    ctx.fillText(`Bối cảnh: ${exportPackage.context_recommended}`, 64, 258);
+    ctx.fillText(`Bối cảnh: ${exportPackage.context_recommended}`, 64, 246);
+
+    // Determine layout geometry based on aspect ratio
+    const stageX = 64;
+    const stageW = width - 128;
+    let stageY = 280;
+    let stageH = 820;
+    let swatchTop = 1130;
+    let noteTop = 1260;
+    let footerY = height - 120;
+
+    if (ratioPreset === '4:5') {
+      stageY = 270;
+      stageH = 500;
+      swatchTop = 795;
+      noteTop = 920;
+      footerY = height - 100;
+    } else if (ratioPreset === '1:1') {
+      stageY = 265;
+      stageH = 370;
+      swatchTop = 655;
+      noteTop = 770;
+      footerY = height - 90;
+    }
+
+    // Draw Central Stage Container Frame
+    ctx.fillStyle = '#18181B';
+    ctx.fillRect(stageX, stageY, stageW, stageH);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(stageX, stageY, stageW, stageH);
+
+    // Top-Left Pill on Stage
+    ctx.fillStyle = 'rgba(24, 24, 27, 0.85)';
+    ctx.fillRect(stageX + 24, stageY + 24, 280, 44);
+    ctx.fillStyle = '#34D399';
+    ctx.font = 'bold 18px Inter, sans-serif';
+    ctx.fillText('✨ 3D / 2D VIRTUAL MODEL', stageX + 44, stageY + 52);
+
+    // Capture / Load Model Image (3D WebGL Canvas or 2D Studio Image)
+    const loadModelImage = (): Promise<HTMLImageElement | null> => {
+      return new Promise((resolve) => {
+        // First check for 3D WebGL canvas in document
+        const webglCanvas = document.querySelector('canvas') as HTMLCanvasElement | null;
+        if (webglCanvas && webglCanvas.width > 100 && webglCanvas.height > 100) {
+          try {
+            const dataUrl = webglCanvas.toDataURL('image/png');
+            if (dataUrl && dataUrl.length > 500) {
+              const testImg = new Image();
+              testImg.crossOrigin = 'anonymous';
+              testImg.onload = () => resolve(testImg);
+              testImg.onerror = () => try2DFallback();
+              testImg.src = dataUrl;
+              return;
+            }
+          } catch {
+            // Buffer tainted or blank, continue to 2D
+          }
+        }
+        try2DFallback();
+
+        function try2DFallback() {
+          const src = model2D.studioUrl || model2D.garment2DUrl;
+          if (!src) return resolve(null);
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => resolve(img);
+          img.onerror = () => resolve(null);
+          img.src = src;
+        }
+      });
+    };
+
+    const modelImg = await loadModelImage();
+    if (modelImg) {
+      // Proportional scale to fit within stage with padding
+      const pad = 36;
+      const availW = stageW - pad * 2;
+      const availH = stageH - pad * 2;
+      const scale = Math.min(availW / modelImg.width, availH / modelImg.height);
+      const drawW = modelImg.width * scale;
+      const drawH = modelImg.height * scale;
+      const drawX = stageX + (stageW - drawW) / 2;
+      const drawY = stageY + (stageH - drawH) / 2;
+
+      // Draw subtle pedestal shadow
+      const grad = ctx.createRadialGradient(
+        drawX + drawW / 2,
+        drawY + drawH - 10,
+        10,
+        drawX + drawW / 2,
+        drawY + drawH - 10,
+        drawW * 0.45
+      );
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0.7)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.ellipse(drawX + drawW / 2, drawY + drawH - 10, drawW * 0.45, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Render model image
+      ctx.drawImage(modelImg, drawX, drawY, drawW, drawH);
+    }
 
     // Palette Swatches Box
-    const swatchTop = 310;
     exportPackage.palette_colors.forEach((sw, idx) => {
       const x = 64 + idx * 320;
       ctx.fillStyle = '#1F1F23';
-      ctx.fillRect(x, swatchTop, 300, 110);
+      ctx.fillRect(x, swatchTop, 300, 95);
       ctx.fillStyle = sw.hex;
-      ctx.fillRect(x + 18, swatchTop + 20, 70, 70);
+      ctx.fillRect(x + 16, swatchTop + 16, 62, 62);
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = 'bold 24px Inter, sans-serif';
-      ctx.fillText(sw.name.slice(0, 16), x + 104, swatchTop + 52);
+      ctx.font = 'bold 22px Inter, sans-serif';
+      ctx.fillText(sw.name.slice(0, 16), x + 94, swatchTop + 44);
       ctx.fillStyle = '#A1A1AA';
-      ctx.font = '500 22px JetBrains Mono, monospace';
-      ctx.fillText(sw.hex, x + 104, swatchTop + 84);
+      ctx.font = '500 20px JetBrains Mono, monospace';
+      ctx.fillText(sw.hex, x + 94, swatchTop + 72);
     });
 
     // Cultural Micro-Card Box
-    const noteTop = swatchTop + 150;
+    const cardHeight = ratioPreset === '9:16' ? 210 : ratioPreset === '4:5' ? 160 : 130;
     ctx.fillStyle = '#18181B';
-    ctx.fillRect(64, noteTop, width - 128, 220);
+    ctx.fillRect(64, noteTop, width - 128, cardHeight);
     ctx.fillStyle = '#34D399';
-    ctx.font = 'bold 24px Inter, sans-serif';
-    ctx.fillText('THÔNG ĐIỆP VĂN HÓA & PHỤ KIỆN ĐI KÈM', 92, noteTop + 48);
+    ctx.font = 'bold 22px Inter, sans-serif';
+    ctx.fillText('THÔNG ĐIỆP VĂN HÓA & PHỤ KIỆN ĐI KÈM', 92, noteTop + 40);
 
     ctx.fillStyle = '#E4E4E7';
-    ctx.font = '400 25px Inter, sans-serif';
+    ctx.font = '400 23px Inter, sans-serif';
     const words = exportPackage.cultural_note.split(' ');
     let line = '';
-    let y = noteTop + 94;
+    let y = noteTop + 78;
     for (const w of words) {
       const test = line + w + ' ';
       if (ctx.measureText(test).width > width - 190) {
         ctx.fillText(line, 92, y);
         line = w + ' ';
-        y += 38;
-        if (y > noteTop + 175) break;
+        y += 34;
+        if (y > noteTop + cardHeight - 50) break;
       } else {
         line = test;
       }
     }
-    if (line && y <= noteTop + 175) ctx.fillText(line, 92, y);
+    if (line && y <= noteTop + cardHeight - 50) ctx.fillText(line, 92, y);
 
     ctx.fillStyle = '#A1A1AA';
-    ctx.font = '500 23px Inter, sans-serif';
+    ctx.font = '500 21px Inter, sans-serif';
     ctx.fillText(
       `Phụ kiện: ${exportPackage.outfit_details.accessories_list.join(' · ')}`,
       92,
-      noteTop + 198
+      noteTop + cardHeight - 18
     );
 
     // Deep Link Footer
-    const footerY = height - 120;
     ctx.fillStyle = '#27272A';
-    ctx.fillRect(64, footerY, width - 128, 76);
+    ctx.fillRect(64, footerY, width - 128, 70);
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = '600 23px JetBrains Mono, monospace';
+    ctx.font = '600 22px JetBrains Mono, monospace';
     ctx.fillText(
       `Deep Link: https://vietphuclookbook.app/look/${exportPackage.lookbook_id}`,
       92,
-      footerY + 46
+      footerY + 44
     );
 
     const dataUrl = canvas.toDataURL('image/png');
@@ -357,7 +461,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                 }`}
               >
                 <Share2 className="w-3.5 h-3.5" />
-                <span>Xuất Lookbook &amp; Deep Link</span>
+                <span>{isEn ? 'Export Lookbook & Deep Link' : 'Xuất Lookbook & Deep Link'}</span>
               </button>
               <button
                 type="button"
@@ -369,7 +473,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                 }`}
               >
                 <Columns2 className="w-3.5 h-3.5" />
-                <span>So sánh Lookbook</span>
+                <span>{isEn ? 'Compare Lookbooks' : 'So sánh Lookbook'}</span>
               </button>
             </div>
           </div>
@@ -378,7 +482,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
             type="button"
             onClick={onClose}
             className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-950 hover:bg-zinc-100 transition-colors cursor-pointer"
-            title="Đóng"
+            title={isEn ? 'Close' : 'Đóng'}
           >
             <X className="w-4 h-4" />
           </button>
@@ -396,14 +500,14 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                 {/* 4. Social Canvas Ratio Selector */}
                 <div className="w-full flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold text-zinc-700">
-                    Khung hình:
+                    {isEn ? 'Frame Ratio:' : 'Khung hình:'}
                   </span>
                   <div className="inline-flex items-center gap-1 p-1 bg-zinc-100 rounded-xl">
                     {(
                       [
                         { id: '9:16', label: '9:16 Story' },
-                        { id: '1:1', label: '1:1 Vuông' },
-                        { id: '4:5', label: '4:5 Dọc' },
+                        { id: '1:1', label: isEn ? '1:1 Square' : '1:1 Vuông' },
+                        { id: '4:5', label: isEn ? '4:5 Portrait' : '4:5 Dọc' },
                       ] as const
                     ).map((r) => (
                       <button
@@ -503,7 +607,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                         <span className="text-zinc-200 font-semibold">
                           {exportPackage.creator_info.username}
                         </span>{' '}
-                        · Phụ kiện: {exportPackage.outfit_details.accessories_list.join(', ')}
+                        · {isEn ? 'Accessories:' : 'Phụ kiện:'} {exportPackage.outfit_details.accessories_list.join(', ')}
                       </div>
                       <QrCode className="w-4 h-4 text-emerald-400 shrink-0" />
                     </div>
@@ -517,7 +621,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                   className="w-full max-w-[350px] py-2.5 px-4 rounded-xl bg-zinc-950 text-white hover:bg-zinc-800 text-xs font-semibold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
                   <Download className="w-4 h-4 text-emerald-400" />
-                  <span>Tải thẻ Lookbook PNG ({ratioPreset})</span>
+                  <span>{isEn ? `Download Lookbook Card PNG (${ratioPreset})` : `Tải thẻ Lookbook PNG (${ratioPreset})`}</span>
                 </button>
               </div>
 
@@ -528,7 +632,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <h4 className="text-sm font-bold text-zinc-950">
-                        1. Tên bộ phối &amp; Thông điệp
+                        {isEn ? '1. Outfit Title & Story' : '1. Tên bộ phối & Thông điệp'}
                       </h4>
                     </div>
                     <button
@@ -542,7 +646,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                       ) : (
                         <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                       )}
-                      <span>Gợi ý bằng AI</span>
+                      <span>{isEn ? 'AI Suggestion' : 'Gợi ý bằng AI'}</span>
                     </button>
                   </div>
 
@@ -552,7 +656,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                       type="text"
                       value={customTitle || exportPackage.title}
                       onChange={(e) => setCustomTitle(e.target.value)}
-                      placeholder="Nhập tên bộ phối Đông Phương..."
+                      placeholder={isEn ? 'Enter Eastern outfit title...' : 'Nhập tên bộ phối Đông Phương...'}
                       className="w-full px-3 py-2 text-xs font-semibold bg-white border border-zinc-200 rounded-xl text-zinc-950 focus:outline-none focus:border-zinc-900"
                     />
                     <div className="flex flex-wrap items-center gap-1.5">
@@ -574,7 +678,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                     <div className="flex items-center justify-between text-xs">
                       <label className="font-semibold text-zinc-800 inline-flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5 text-rose-600" />
-                        <span>Gắn thẻ Địa điểm Di tích (Google Maps Lite):</span>
+                        <span>{isEn ? 'Tag Heritage Landmark (Google Maps Lite):' : 'Gắn thẻ Địa điểm Di tích (Google Maps Lite):'}</span>
                       </label>
                       {exportPackage.maps_integration_lite && (
                         <div className="flex items-center gap-2">
@@ -584,7 +688,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                             rel="noopener noreferrer"
                             className="text-[11px] font-semibold text-blue-600 hover:underline inline-flex items-center gap-0.5"
                           >
-                            <span>Mở Maps</span>
+                            <span>{isEn ? 'Open Maps' : 'Mở Maps'}</span>
                           </a>
                           <span className="text-zinc-300">·</span>
                           <a
@@ -594,7 +698,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                             className="text-[11px] font-semibold text-emerald-700 hover:underline inline-flex items-center gap-0.5"
                           >
                             <Navigation className="w-2.5 h-2.5" />
-                            <span>Chỉ đường</span>
+                            <span>{isEn ? 'Directions' : 'Chỉ đường'}</span>
                           </a>
                         </div>
                       )}
@@ -619,7 +723,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                     <div className="flex items-center gap-2">
                       <Link2 className="w-4 h-4 text-blue-600" />
                       <h4 className="text-sm font-bold text-zinc-950">
-                        2. Liên kết chia sẻ nhanh
+                        {isEn ? '2. Shareable Quick Links' : '2. Liên kết chia sẻ nhanh'}
                       </h4>
                     </div>
                   </div>
@@ -648,12 +752,12 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                         {copiedKey === 'deep-link' ? (
                           <>
                             <Check className="w-3 h-3 text-emerald-400" />
-                            <span>Đã chép</span>
+                            <span>{isEn ? 'Copied' : 'Đã chép'}</span>
                           </>
                         ) : (
                           <>
                             <Copy className="w-3 h-3" />
-                            <span>Chép Link</span>
+                            <span>{isEn ? 'Copy Link' : 'Chép Link'}</span>
                           </>
                         )}
                       </button>
@@ -681,12 +785,12 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                         {copiedKey === 'web-link' ? (
                           <>
                             <Check className="w-3 h-3 text-emerald-600" />
-                            <span>Đã chép</span>
+                            <span>{isEn ? 'Copied' : 'Đã chép'}</span>
                           </>
                         ) : (
                           <>
                             <Copy className="w-3 h-3" />
-                            <span>Chép Preview</span>
+                            <span>{isEn ? 'Copy Preview' : 'Chép Preview'}</span>
                           </>
                         )}
                       </button>
@@ -697,7 +801,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                   {showRawJson && exportPackage.encoded_payload && (
                     <div className="p-2.5 rounded-xl bg-zinc-950 text-zinc-200 text-[11px] font-mono-tabular space-y-1">
                       <div className="flex items-center justify-between text-[10px] text-zinc-400">
-                        <span>Tham số Mã hóa trong Link (Payload Parameters):</span>
+                        <span>{isEn ? 'Encoded Payload Parameters:' : 'Tham số Mã hóa trong Link (Payload Parameters):'}</span>
                         <span>creator_id: {exportPackage.encoded_payload.creator_id}</span>
                       </div>
                       <div className="text-emerald-400 truncate">
@@ -712,7 +816,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                   <div className="pt-2 border-t border-zinc-100 space-y-2.5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-xs font-bold text-zinc-900">
-                        Chế độ mở link của người nhận:
+                        {isEn ? 'Recipient View Mode:' : 'Chế độ mở link của người nhận:'}
                       </span>
                       <div className="inline-flex items-center gap-1 p-1 bg-zinc-100 rounded-xl">
                         <button
@@ -725,7 +829,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                           }`}
                         >
                           <Smartphone className="w-3 h-3 text-emerald-600" />
-                          <span>Đã có App</span>
+                          <span>{isEn ? 'In-App Ready' : 'Đã có App'}</span>
                         </button>
                         <button
                           type="button"
@@ -737,7 +841,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                           }`}
                         >
                           <Globe className="w-3 h-3 text-blue-600" />
-                          <span>Xem trên Web 360°</span>
+                          <span>{isEn ? 'Web 360° Preview' : 'Xem trên Web 360°'}</span>
                         </button>
                       </div>
                     </div>
@@ -745,7 +849,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                     {dualRoutingMode === 'app-installed' ? (
                       <div className="p-3 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                         <div className="font-bold text-emerald-950">
-                          Điều hướng In-App · Magic Re-Fit
+                          {isEn ? 'In-App Navigation · Magic Re-Fit' : 'Điều hướng In-App · Magic Re-Fit'}
                         </div>
                         <button
                           type="button"
@@ -761,14 +865,14 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                           className="px-3.5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-semibold inline-flex items-center gap-1.5 shrink-0 cursor-pointer"
                         >
                           <Wand2 className="w-3.5 h-3.5" />
-                          <span>Thử bộ này lên Avatar của tôi</span>
+                          <span>{isEn ? 'Try this outfit on my Avatar' : 'Thử bộ này lên Avatar của tôi'}</span>
                         </button>
                       </div>
                     ) : (
                       <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200/80 space-y-2.5 text-xs">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="font-bold text-blue-950">
-                            Web Preview 360°
+                            {isEn ? 'Web Preview 360°' : 'Web Preview 360°'}
                           </div>
                           <button
                             type="button"
@@ -776,13 +880,13 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                             className="px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-blue-900 font-semibold inline-flex items-center gap-1 cursor-pointer"
                           >
                             <RotateCw className="w-3 h-3" />
-                            <span>Xoay 360° ({webPreviewAngle}°)</span>
+                            <span>{isEn ? `Rotate 360° (${webPreviewAngle}°)` : `Xoay 360° (${webPreviewAngle}°)`}</span>
                           </button>
                         </div>
 
                         <div className="flex items-center justify-between gap-3 pt-1">
                           <span className="text-[11px] font-mono-tabular text-blue-800">
-                            Góc nhìn: {webPreviewAngle}°
+                            {isEn ? 'Camera Angle:' : 'Góc nhìn:'} {webPreviewAngle}°
                           </span>
                           <button
                             type="button"
@@ -798,7 +902,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                             className="px-3.5 py-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold inline-flex items-center gap-1.5 shrink-0 cursor-pointer"
                           >
                             <Smartphone className="w-3.5 h-3.5 text-blue-400" />
-                            <span>Tải App để thử lên vóc dáng thực</span>
+                            <span>{isEn ? 'Open in App to fit on real body' : 'Tải App để thử lên vóc dáng thực'}</span>
                           </button>
                         </div>
                       </div>
@@ -816,7 +920,9 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                     >
                       <Code2 className="w-4 h-4 text-zinc-700" />
                       <span>
-                        Chi tiết kỹ thuật &amp; Mã dữ liệu JSON ({showRawJson ? 'Thu' : 'Mở rộng'})
+                        {isEn 
+                          ? `Technical Details & JSON Payload (${showRawJson ? 'Collapse' : 'Expand'})`
+                          : `Chi tiết kỹ thuật & Mã dữ liệu JSON (${showRawJson ? 'Thu' : 'Mở rộng'})`}
                       </span>
                     </button>
 
@@ -830,12 +936,12 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                       {copiedKey === 'json-schema' ? (
                         <>
                           <Check className="w-3 h-3 text-emerald-600" />
-                          <span>Đã chép JSON</span>
+                          <span>{isEn ? 'Copied JSON' : 'Đã chép JSON'}</span>
                         </>
                       ) : (
                         <>
                           <Copy className="w-3 h-3" />
-                          <span>Chép JSON</span>
+                          <span>{isEn ? 'Copy JSON' : 'Chép JSON'}</span>
                         </>
                       )}
                     </button>
@@ -861,13 +967,13 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                     {(
                       [
                         {
-                          label: 'Bộ A',
+                          label: isEn ? 'Outfit A' : 'Bộ A',
                           selectedId: outfitAId,
                           onSelect: setOutfitAId,
                           data: comparisonData.outfit_a,
                         },
                         {
-                          label: 'Bộ B',
+                          label: isEn ? 'Outfit B' : 'Bộ B',
                           selectedId: outfitBId,
                           onSelect: setOutfitBId,
                           data: comparisonData.outfit_b,
@@ -920,7 +1026,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                             </p>
 
                             <p className="text-[11px] text-zinc-500">
-                              <strong className="font-semibold text-zinc-800">Phụ kiện: </strong>
+                              <strong className="font-semibold text-zinc-800">{isEn ? 'Accessories: ' : 'Phụ kiện: '}</strong>
                               {box.data.accessories.join(' · ')}
                             </p>
 
@@ -948,25 +1054,27 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                   <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden">
                     <div className="px-4 py-2.5 bg-zinc-50 border-b border-zinc-200 flex flex-wrap items-center justify-between gap-2 text-xs">
                       <span className="font-bold text-zinc-950">
-                        Bảng đối chiếu tiêu chí thực tiễn
+                        {isEn ? 'Practical Criteria Comparison Table' : 'Bảng đối chiếu tiêu chí thực tiễn'}
                       </span>
 
                       <div className="flex items-center gap-1.5">
-                        <span className="text-zinc-500">Nhu cầu:</span>
+                        <span className="text-zinc-500">{isEn ? 'Context:' : 'Nhu cầu:'}</span>
                         <select
                           value={compareContext}
                           onChange={(e) => setCompareContext(e.target.value)}
                           className="px-2.5 py-1 rounded-lg bg-white border border-zinc-200 text-xs font-medium text-zinc-900 focus:outline-none"
                         >
                           <option value="Lễ tốt nghiệp & Chụp ảnh di tích">
-                            Lễ tốt nghiệp &amp; Di tích
+                            {isEn ? 'Graduation & Heritage Sites' : 'Lễ tốt nghiệp & Di tích'}
                           </option>
-                          <option value="Lễ cưới hỏi truyền thống">Lễ cưới truyền thống</option>
+                          <option value="Lễ cưới hỏi truyền thống">
+                            {isEn ? 'Traditional Wedding' : 'Lễ cưới truyền thống'}
+                          </option>
                           <option value="Đi chùa & Trảy hội mùa xuân">
-                            Đi chùa &amp; Hội xuân
+                            {isEn ? 'Temple & Spring Festival' : 'Đi chùa & Hội xuân'}
                           </option>
                           <option value="Dạo phố & Chụp ảnh ngoại cảnh">
-                            Dạo phố &amp; Ngoại cảnh
+                            {isEn ? 'Strolling & Photoshoot' : 'Dạo phố & Ngoại cảnh'}
                           </option>
                         </select>
                         <button
@@ -974,14 +1082,14 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                           onClick={handleAskAIComparison}
                           disabled={isComparingAI}
                           className="px-2.5 py-1 rounded-lg bg-zinc-950 text-white hover:bg-zinc-800 text-xs font-semibold inline-flex items-center gap-1 cursor-pointer"
-                          title="Phân tích thực tiễn bằng AI"
+                          title={isEn ? 'Analyze comparison with AI' : 'Phân tích thực tiễn bằng AI'}
                         >
                           {isComparingAI ? (
                             <Loader2 className="w-3 h-3 animate-spin" />
                           ) : (
                             <Sparkles className="w-3 h-3" />
                           )}
-                          <span>Gợi ý AI</span>
+                          <span>{isEn ? 'AI Analysis' : 'Gợi ý AI'}</span>
                         </button>
                       </div>
                     </div>
@@ -990,12 +1098,14 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
                       <table className="w-full text-left border-collapse text-xs">
                         <thead>
                           <tr className="border-b border-zinc-200 text-zinc-500 bg-white">
-                            <th className="py-2.5 px-4 font-semibold w-[24%]">Tiêu chí thực tiễn</th>
-                            <th className="py-2.5 px-4 font-semibold w-[38%] text-zinc-900">
-                              Bộ A · {comparisonData.outfit_a.title}
+                            <th className="py-2.5 px-4 font-semibold w-[24%]">
+                              {isEn ? 'Practical Criteria' : 'Tiêu chí thực tiễn'}
                             </th>
                             <th className="py-2.5 px-4 font-semibold w-[38%] text-zinc-900">
-                              Bộ B · {comparisonData.outfit_b.title}
+                              {isEn ? 'Outfit A' : 'Bộ A'} · {comparisonData.outfit_a.title}
+                            </th>
+                            <th className="py-2.5 px-4 font-semibold w-[38%] text-zinc-900">
+                              {isEn ? 'Outfit B' : 'Bộ B'} · {comparisonData.outfit_b.title}
                             </th>
                           </tr>
                         </thead>
@@ -1020,7 +1130,7 @@ export const LookbookStudioModal: React.FC<LookbookStudioModalProps> = ({
 
                   {/* Minimalist Practical Recommendation Summary */}
                   <div className="p-3.5 rounded-xl bg-zinc-50 border border-zinc-200 text-xs text-zinc-700 leading-relaxed">
-                    <strong className="text-zinc-950">Nhận định thực tiễn: </strong>
+                    <strong className="text-zinc-950">{isEn ? 'Practical Evaluation: ' : 'Nhận định thực tiễn: '}</strong>
                     {comparisonData.ai_short_advice}
                   </div>
                 </>

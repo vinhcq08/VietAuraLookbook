@@ -7,6 +7,8 @@ import {
   Map,
   Users,
   BookOpen,
+  X,
+  Sparkles,
 } from 'lucide-react';
 import {
   CURATED_LOOKBOOKS,
@@ -35,6 +37,7 @@ import { VirtualFittingRoom3D } from './components/VirtualFittingRoom3D';
 import { CulturalAdvisorSection } from './components/CulturalAdvisorSection';
 import { HeritageMapPassportSection } from './components/HeritageMapPassportSection';
 import { SocialPostsHubSection } from './components/SocialPostsHubSection';
+import { TRANSLATIONS } from './utils/i18n';
 import {
   UserAccountMenu,
   UserAccountProfile,
@@ -66,6 +69,7 @@ const DEFAULT_UI_SETTINGS: AppUISettings = {
   density: 'comfortable',
   autoSaveLocal: true,
   syncStudioWithMap: true,
+  language: 'vi',
 };
 
 export type MainNavigationTab = ActiveSystemTab | 'TAB_MESSAGES';
@@ -111,6 +115,10 @@ export default function App() {
   const [externalSendMeasurementsTrigger, setExternalSendMeasurementsTrigger] = useState<
     number | null
   >(null);
+  const [stylingMode, setStylingMode] = useState<'STRICT_HERITAGE' | 'MODERN_FUSION'>(
+    'STRICT_HERITAGE'
+  );
+  const [isAutoRotating, setIsAutoRotating] = useState<boolean>(true);
 
   useEffect(() => {
     try {
@@ -207,7 +215,12 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
-    showToast(`Xin chào ${profile.name}! Đã đăng nhập thành công.`);
+    const isEn = (uiSettings.language || 'vi') === 'en';
+    showToast(
+      isEn
+        ? `Welcome ${profile.name}! Signed in successfully.`
+        : `Xin chào ${profile.name}! Đã đăng nhập thành công.`
+    );
   };
 
   const handleLogout = () => {
@@ -217,7 +230,8 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
-    showToast('Đã đăng xuất tài khoản');
+    const isEn = (uiSettings.language || 'vi') === 'en';
+    showToast(isEn ? 'Signed out successfully' : 'Đã đăng xuất tài khoản');
   };
 
   const handleUpdateProfile = (profile: UserAccountProfile) => {
@@ -235,7 +249,8 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
-    showToast('Đã cập nhật thông tin tài khoản');
+    const isEn = (uiSettings.language || 'vi') === 'en';
+    showToast(isEn ? 'Account profile updated' : 'Đã cập nhật thông tin tài khoản');
   };
 
   const handleUpdateUISettings = (nextSettings: AppUISettings) => {
@@ -260,8 +275,11 @@ export default function App() {
     setActiveMainTab('TAB_MESSAGES');
     setExternalSendMeasurementsTrigger(Date.now());
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    const isEn = (uiSettings.language || 'vi') === 'en';
     showToast(
-      `Đã gửi Bảng Số Đo 3D (${userMeasurements.height_cm}cm · ${userMeasurements.weight_kg}kg · Size ${userMeasurements.suggested_size}) tới Tiệm May B2B!`
+      isEn
+        ? `Sent 3D Body Specs (${userMeasurements.height_cm}cm · ${userMeasurements.weight_kg}kg · Size ${userMeasurements.suggested_size}) to B2B Tailor!`
+        : `Đã gửi Bảng Số Đo 3D (${userMeasurements.height_cm}cm · ${userMeasurements.weight_kg}kg · Size ${userMeasurements.suggested_size}) tới Tiệm May B2B!`
     );
   };
 
@@ -282,16 +300,18 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
-    showToast('Đã khôi phục giao diện và dữ liệu mặc định');
+    const isEn = (uiSettings.language || 'vi') === 'en';
+    showToast(isEn ? 'Reset UI settings and restored default data' : 'Đã khôi phục giao diện và dữ liệu mặc định');
   };
 
   const handleAwardOmnichannelPoints = (
     entry: Omit<OmnichannelPointEntry, 'id' | 'timestamp'>
   ) => {
+    const isEn = (uiSettings.language || 'vi') === 'en';
     const newEntry: OmnichannelPointEntry = {
       ...entry,
       id: `pt-${Date.now()}`,
-      timestamp: new Date().toLocaleDateString('vi-VN'),
+      timestamp: new Date().toLocaleDateString(isEn ? 'en-US' : 'vi-VN'),
     };
     setOmnichannelLogs((prev) => {
       const next = [newEntry, ...prev];
@@ -304,7 +324,11 @@ export default function App() {
       }
       return next;
     });
-    showToast(`+${entry.points} Điểm Di Sản (${entry.sourceLabel})`);
+    showToast(
+      isEn
+        ? `+${entry.points} Heritage Points (${entry.sourceLabel})`
+        : `+${entry.points} Điểm Di Sản (${entry.sourceLabel})`
+    );
   };
 
   const handleSelectPinnedBadge = (badgeId: string) => {
@@ -314,7 +338,8 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
-    showToast('Đã cập nhật Huy hiệu Di Sản đính trên hồ sơ!');
+    const isEn = (uiSettings.language || 'vi') === 'en';
+    showToast(isEn ? 'Updated pinned Heritage Badge on profile!' : 'Đã cập nhật Huy hiệu Di Sản đính trên hồ sơ!');
   };
 
   const handleUnlockStamp = (stamp: UnlockedStampEntry) => {
@@ -517,28 +542,35 @@ export default function App() {
   const stampPoints = unlockedStamps.reduce((sum, s) => sum + s.points_awarded, 0);
   const omnichannelExtraPoints = omnichannelLogs.reduce((sum, l) => sum + l.points, 0);
   const totalPoints = stampPoints + omnichannelExtraPoints;
+  const currentLang = uiSettings.language || 'vi';
+  const t = TRANSLATIONS[currentLang] || TRANSLATIONS.vi;
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-zinc-950">
-      {/* Top Navigation Bar — Streamlined 3-Tab Architecture + Dedicated Messages Icon */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-zinc-200 px-4 sm:px-6 lg:px-8 py-2.5">
+    <div className="min-h-screen flex flex-col bg-[#FBF9F5] text-stone-900 selection:bg-[#9A3412]/15 selection:text-[#9A3412]">
+      {/* Apple-style Translucent Header Bar */}
+      <header className="sticky top-0 z-40 bg-[#FAF8F5]/90 backdrop-blur-2xl border-b border-[#E8E2D6] px-4 sm:px-6 lg:px-8 py-2.5">
         <div className="max-w-[1360px] mx-auto flex items-center justify-between gap-4">
-          {/* Brand Wordmark */}
+          {/* Brand Wordmark with Heritage Touch */}
           <button
             type="button"
             onClick={() => {
               setActiveMainTab('TAB_3_COMMUNITY_MARKETPLACE');
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
-            className="text-base sm:text-lg font-bold tracking-tight text-zinc-950 whitespace-nowrap cursor-pointer"
+            className="flex items-center gap-2 group cursor-pointer"
           >
-            VietAura
+            <div className="w-7 h-7 rounded-lg bg-[#9A3412] text-white flex items-center justify-center font-bold text-xs shadow-xs group-hover:scale-105 transition-transform duration-150">
+              VA
+            </div>
+            <span className="text-base sm:text-lg font-bold tracking-tight text-stone-950 whitespace-nowrap">
+              VietAura
+            </span>
           </button>
 
-          {/* 3 Main Tabs (1: Cộng Đồng, 2: Studio, 3: Hành Trình) */}
+          {/* Apple iOS Segmented Control (3 Main Tabs) */}
           <nav
-            className="hidden md:flex items-center gap-1.5 p-1 bg-zinc-100 rounded-xl border border-zinc-200/80"
-            aria-label="Điều hướng 3 Tab chính"
+            className="hidden md:flex items-center p-1 bg-[#EBE5D8]/80 rounded-full border border-[#DFD7C7]/70 shadow-inner"
+            aria-label={currentLang === 'en' ? 'Apple-style segmented navigation' : 'Điều hướng phân đoạn kiểu Apple'}
           >
             <button
               type="button"
@@ -546,14 +578,14 @@ export default function App() {
                 setActiveMainTab('TAB_3_COMMUNITY_MARKETPLACE');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 whitespace-nowrap cursor-pointer active:scale-95 ${
                 activeMainTab === 'TAB_3_COMMUNITY_MARKETPLACE'
-                  ? 'bg-zinc-950 text-white shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-950'
+                  ? 'bg-[#9A3412] text-white shadow-xs font-bold'
+                  : 'text-stone-700 hover:text-stone-950'
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>Cộng Đồng</span>
+              <span>{t.navCommunity}</span>
             </button>
 
             <button
@@ -562,14 +594,14 @@ export default function App() {
                 setActiveMainTab('TAB_1_CORE_STUDIO');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 whitespace-nowrap cursor-pointer active:scale-95 ${
                 activeMainTab === 'TAB_1_CORE_STUDIO'
-                  ? 'bg-zinc-950 text-white shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-950'
+                  ? 'bg-[#9A3412] text-white shadow-xs font-bold'
+                  : 'text-stone-700 hover:text-stone-950'
               }`}
             >
               <Cuboid className="w-3.5 h-3.5" />
-              <span>Studio</span>
+              <span>{t.navStudio}</span>
             </button>
 
             <button
@@ -578,37 +610,54 @@ export default function App() {
                 setActiveMainTab('TAB_2_HERITAGE_JOURNEY');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 whitespace-nowrap cursor-pointer active:scale-95 ${
                 activeMainTab === 'TAB_2_HERITAGE_JOURNEY'
-                  ? 'bg-zinc-950 text-white shadow-2xs'
-                  : 'text-zinc-600 hover:text-zinc-950'
+                  ? 'bg-[#9A3412] text-white shadow-xs font-bold'
+                  : 'text-stone-700 hover:text-stone-950'
               }`}
             >
               <Map className="w-3.5 h-3.5" />
-              <span>Hành Trình</span>
+              <span>{t.navMap}</span>
             </button>
           </nav>
 
-          {/* Dedicated Messages Tab Icon + User Account Avatar */}
+          {/* Dedicated Messages Icon + Language Switcher + User Account Menu */}
           <div className="flex items-center gap-2">
-            {/* Dedicated Messages Tab Icon (Left of Account Icon) */}
+            {/* Quick Bilingual Language Switcher Pill */}
+            <button
+              type="button"
+              onClick={() => {
+                const nextLang = (uiSettings.language || 'vi') === 'vi' ? 'en' : 'vi';
+                handleUpdateUISettings({ ...uiSettings, language: nextLang });
+                showToast(
+                  nextLang === 'en'
+                    ? 'Switched language to English (Traditional costume names preserved)'
+                    : 'Đã chuyển sang Tiếng Việt (Bảo lưu danh pháp Cổ phục)'
+                );
+              }}
+              title={uiSettings.language === 'en' ? 'Chuyển sang Tiếng Việt' : 'Switch to English'}
+              className="px-2.5 py-1 rounded-full text-xs font-bold border border-[#E8E2D6] bg-stone-100 hover:bg-stone-200 text-stone-800 transition-all cursor-pointer active:scale-95 flex items-center gap-1 shadow-2xs"
+            >
+              <span>{(uiSettings.language || 'vi') === 'vi' ? '🇻🇳 VI' : '🇬🇧 EN'}</span>
+            </button>
+
             <button
               type="button"
               onClick={() => {
                 setActiveMainTab('TAB_MESSAGES');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              title="Tin nhắn (AI Stylist, Tiệm may & Cá nhân)"
+              title={uiSettings.language === 'en' ? 'Messages' : 'Tin nhắn (AI Stylist, Tiệm may & Cá nhân)'}
               aria-label="Tin nhắn"
-              className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer border ${
+              className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-all duration-150 cursor-pointer border active:scale-95 ${
                 activeMainTab === 'TAB_MESSAGES'
-                  ? 'bg-zinc-950 text-white border-zinc-950 ring-2 ring-zinc-300'
-                  : 'bg-zinc-100 text-zinc-800 border-zinc-200 hover:bg-zinc-200'
+                  ? 'bg-[#9A3412] text-white border-[#9A3412] shadow-xs'
+                  : 'bg-stone-100 text-stone-800 border-stone-200 hover:bg-stone-200'
               }`}
             >
               <MessagesSquare className="w-4 h-4" />
               <span
-                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-rose-500 border-2 border-white"
+                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#D97706] border-2 border-white animate-pulse"
                 aria-hidden="true"
               />
             </button>
@@ -647,21 +696,31 @@ export default function App() {
         </div>
       </header>
 
-      {/* Toast Feedback Banner */}
+      {/* Apple Dynamic Island Top-Dropping Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-zinc-950 text-white px-4 py-3 text-xs font-medium rounded-xl shadow-lg flex items-center gap-2.5">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-          <span>{toastMessage}</span>
+        <div className="fixed top-4 inset-x-0 mx-auto max-w-md z-50 px-4 pointer-events-none">
+          <div className="pointer-events-auto bg-[#1C1917]/95 text-white backdrop-blur-2xl px-4 py-2.5 text-xs font-medium rounded-full shadow-2xl border border-stone-800 flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex items-center gap-2 min-w-0">
+              <CheckCircle2 className="w-4 h-4 text-[#D97706] shrink-0" />
+              <span className="truncate">{toastMessage}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setToastMessage(null)}
+              className="p-1 rounded-full text-stone-400 hover:text-white cursor-pointer active:scale-95 transition-transform"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Main Content — Streamlined 3-Tab Ecosystem + Dedicated Messages Tab */}
-      <main id="top" className="flex-1">
-        {/* =================================================================
-            TAB 1: 👥 CỘNG ĐỒNG & B2B MARKETPLACE (Social Trends, Challenge & Tiệm May)
-           ================================================================= */}
+      {/* Main Content — Streamlined Ecosystem Tabs */}
+      <main id="top" className="flex-1 pb-16 md:pb-0">
+        {/* TAB 1: 👥 CỘNG ĐỒNG & B2B MARKETPLACE */}
         {activeMainTab === 'TAB_3_COMMUNITY_MARKETPLACE' && (
           <SocialPostsHubSection
+            language={currentLang}
             posts={socialPosts}
             onAddPost={handleAddSocialPost}
             onApplyOutfitConfigTo3D={handleApplyOutfitConfigToStudio}
@@ -673,11 +732,10 @@ export default function App() {
           />
         )}
 
-        {/* =================================================================
-            TAB 2: 👗 STUDIO (PHÒNG THỬ ẢO 3D/2D & TRỢ LÝ CỐ VẤN AI)
-           ================================================================= */}
+        {/* TAB 2: 👗 STUDIO 3D */}
         {activeMainTab === 'TAB_1_CORE_STUDIO' && (
           <VirtualFittingRoom3D
+            language={currentLang}
             selection={studioSelection}
             onChangeSelection={setStudioSelection}
             onSaveLookbook={handleSaveLookbook}
@@ -693,12 +751,11 @@ export default function App() {
           />
         )}
 
-        {/* =================================================================
-            TAB 3: 🏛️ HÀNH TRÌNH (Dashboard Di sản, Bản đồ GPS, Sổ Tem & Lễ hội)
-           ================================================================= */}
+        {/* TAB 3: 🏛️ HÀNH TRÌNH DI SẢN */}
         {activeMainTab === 'TAB_2_HERITAGE_JOURNEY' && (
           <HeritageMapPassportSection
-            userName={isLoggedIn ? userProfile.name : 'Bạn đọc Việt Phục'}
+            language={currentLang}
+            userName={isLoggedIn ? userProfile.name : (currentLang === 'en' ? 'Heritage Explorer' : 'Bạn đọc Việt Phục')}
             unlockedStamps={unlockedStamps}
             onUnlockStamp={handleUnlockStamp}
             onApplyOutfitConfigToStudio={handleApplyOutfitConfigToStudio}
@@ -714,11 +771,10 @@ export default function App() {
           />
         )}
 
-        {/* =================================================================
-            TAB TIN NHẮN RIÊNG (Icon Tin nhắn bên trái Icon Tài khoản)
-           ================================================================= */}
+        {/* TAB 4: 💬 TIN NHẮN & CỐ VẤN AI */}
         {activeMainTab === 'TAB_MESSAGES' && (
           <CulturalAdvisorSection
+            language={currentLang}
             studioSelection={studioSelection}
             onApplyCardToStudio={handleApplyCardToStudio}
             onApplyOutfitConfigToStudio={handleApplyOutfitConfigToStudio}
@@ -732,18 +788,22 @@ export default function App() {
         )}
       </main>
 
-      {/* Minimalist Single-Line Footer */}
-      <footer className="bg-zinc-50 border-t border-zinc-200 py-5 pb-20 md:pb-5 px-4 sm:px-6 lg:px-8 text-xs text-zinc-500">
+      {/* Minimalist Editorial Footer */}
+      <footer className="bg-[#FAF8F5] border-t border-[#E8E2D6] py-5 pb-24 md:pb-5 px-4 sm:px-6 lg:px-8 text-xs text-stone-500">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span className="font-semibold text-zinc-900">VietAura</span>
-          <span>Cộng Đồng · Studio · Hành Trình · Tin Nhắn</span>
+          <div className="flex items-center gap-2">
+            <span className="font-bold text-stone-900">VietAura</span>
+            <span className="text-stone-400">·</span>
+            <span>{currentLang === 'en' ? 'Vietnamese Heritage & Traditional Garment Digital Ecosystem' : 'Hệ sinh thái Công nghệ Thời trang Di sản'}</span>
+          </div>
+          <span>{currentLang === 'en' ? 'Community · 3D Studio · Heritage Map · AI Advisory' : 'Cộng Đồng · Studio 3D · Hành Trình · Cố Vấn AI'}</span>
         </div>
       </footer>
 
-      {/* Mobile Bottom 3-Tab Bar (1: Cộng Đồng, 2: Studio, 3: Hành Trình) */}
+      {/* Apple-style Floating Translucent Bottom Tab Bar for Mobile & Tablet */}
       <nav
-        aria-label="Điều hướng di động 3 Tab"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-zinc-200 px-2 py-2 flex items-center justify-around text-[10px] font-semibold text-zinc-600"
+        aria-label={currentLang === 'en' ? 'iPhone-style mobile navigation' : 'Điều hướng di động kiểu iPhone'}
+        className="md:hidden fixed bottom-4 inset-x-4 max-w-sm mx-auto z-40 bg-[#FAF8F5]/92 backdrop-blur-2xl border border-[#DFD7C7]/90 shadow-2xl shadow-stone-900/15 rounded-full px-3 py-1.5 flex items-center justify-around text-[10px] font-semibold text-stone-600 pb-safe"
       >
         <button
           type="button"
@@ -751,14 +811,14 @@ export default function App() {
             setActiveMainTab('TAB_3_COMMUNITY_MARKETPLACE');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`flex flex-col items-center gap-0.5 cursor-pointer ${
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full cursor-pointer transition-all duration-150 active:scale-90 ${
             activeMainTab === 'TAB_3_COMMUNITY_MARKETPLACE'
-              ? 'text-zinc-950 font-bold'
-              : 'text-zinc-500'
+              ? 'bg-[#9A3412] text-white shadow-xs font-bold'
+              : 'text-stone-600 hover:text-stone-950'
           }`}
         >
           <Users className="w-4 h-4" />
-          <span>Cộng Đồng</span>
+          <span>{t.navCommunity}</span>
         </button>
 
         <button
@@ -767,12 +827,14 @@ export default function App() {
             setActiveMainTab('TAB_1_CORE_STUDIO');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`flex flex-col items-center gap-0.5 cursor-pointer ${
-            activeMainTab === 'TAB_1_CORE_STUDIO' ? 'text-zinc-950 font-bold' : 'text-zinc-500'
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full cursor-pointer transition-all duration-150 active:scale-90 ${
+            activeMainTab === 'TAB_1_CORE_STUDIO'
+              ? 'bg-[#9A3412] text-white shadow-xs font-bold'
+              : 'text-stone-600 hover:text-stone-950'
           }`}
         >
           <Cuboid className="w-4 h-4" />
-          <span>Studio</span>
+          <span>{t.navStudio}</span>
         </button>
 
         <button
@@ -781,12 +843,30 @@ export default function App() {
             setActiveMainTab('TAB_2_HERITAGE_JOURNEY');
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
-          className={`flex flex-col items-center gap-0.5 cursor-pointer ${
-            activeMainTab === 'TAB_2_HERITAGE_JOURNEY' ? 'text-zinc-950 font-bold' : 'text-zinc-500'
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full cursor-pointer transition-all duration-150 active:scale-90 ${
+            activeMainTab === 'TAB_2_HERITAGE_JOURNEY'
+              ? 'bg-[#9A3412] text-white shadow-xs font-bold'
+              : 'text-stone-600 hover:text-stone-950'
           }`}
         >
           <Map className="w-4 h-4" />
-          <span>Hành Trình</span>
+          <span>{t.navMap}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMainTab('TAB_MESSAGES');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-full cursor-pointer transition-all duration-150 active:scale-90 relative ${
+            activeMainTab === 'TAB_MESSAGES'
+              ? 'bg-[#9A3412] text-white shadow-xs font-bold'
+              : 'text-stone-600 hover:text-stone-950'
+          }`}
+        >
+          <MessagesSquare className="w-4 h-4" />
+          <span>{t.navMessages}</span>
         </button>
       </nav>
     </div>
